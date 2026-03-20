@@ -28,6 +28,7 @@ Aplicação web feita em node. Dashboard de acompanhamento de sprints. A missão
 
 ### Filosofia de Trabalho
 - **Debate antes de codar**: Dados → diagnóstico → debate → código. Não pular etapas.
+- **Validação com o Usuário**: Em caso de dúvida sobre a causa raiz ou comportamento esperado (bugs, layouts ambíguos), **perguntar ao usuário** antes de aplicar correções baseadas em suposições. O feedback economiza tempo e evita retrabalho.
 - **Edição Cirúrgica**: Proibido sobrescrever arquivos inteiros (`write_file`) em arquivos já existentes. Sempre use `read_file` + `replace` para modificações pontuais, evitando efeitos colaterais e mantendo o que já foi validado.
 - **Validação rigorosa**: Só confirmar fix quando validado end-to-end.
 - **Não deixa loose end**: Trabalho fechado = commit imediato.
@@ -57,4 +58,14 @@ Aplicação web feita em node. Dashboard de acompanhamento de sprints. A missão
 
 
 ## 📊 Aprendizados Técnicos
+- **Mapeamento Jira Carrefour**:
+    - Story Points: `customfield_10030`
+    - Sprint Link: `customfield_10020`
+    - Epic Link: `customfield_10014`
+    - Endpoint de Busca: `/rest/api/3/search/jql` (POST)
+- **Convenções do Time**:
+    - Fura-fila: Identificado pela presença de `[fura-fila]` ou `[fura fila]` no título do ticket.
+    - Status Done: Inclui `Concluído`, `Finalizado`, `Finalização Produção` e `Aguardando Produção`.
+- **Node.js**:
+    - O pacote `open` em versões recentes exige `import()` dinâmico se o projeto for CommonJS (`require`).
 

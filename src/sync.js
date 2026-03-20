@@ -1,0 +1,141 @@
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
+const fs = require('fs');
+const https = require('https');
+
+const JIRA_HOST = 'c4br.atlassian.net';
+const JIRA_USER = process.env.JIRA_USER;
+const JIRA_TOKEN = process.env.JIRA_API_KEY;
+
+async function fetchJira(apiUrl) {
+    if (!JIRA_USER || !JIRA_TOKEN) throw new Error('Credenciais JIRA não carregadas. Verifique o .env');
+    const auth = Buffer.from(`${JIRA_USER}:${JIRA_TOKEN}`).toString('base64');
+    const headers = { 'Authorization': `Basic ${auth}`, 'Accept': 'application/json' };
+
+    return new Promise((resolve, reject) => {
+        https.get(`https://${JIRA_HOST}${apiUrl}`, { headers }, (res) => {
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => {
+                try { 
+                    const parsed = JSON.parse(data);
+                    if (res.statusCode >= 400) reject(new Error(parsed.errorMessages ? parsed.errorMessages[0] : `Jira Error ${res.statusCode}`));
+                    else resolve(parsed); 
+                } catch (e) { reject(new Error('JSON Parse Error')); }
+            });
+        }).on('error', reject);
+    });
+}
+
+async function syncSprint(sprintIdOrObject) {
+    try {
+        let sprintMetadata = sprintIdOrObject;
+        
+        // If only ID is passed, fetch basic sprint info first
+        if (typeof sprintIdOrObject !== 'object') {
+            sprintMetadata = await fetchJira(`/rest/agile/1.0/sprint/${sprintIdOrObject}`);
+        }
+
+        if (!sprintMetadata || !sprintMetadata.name) {
+            throw new Error(`Dados da sprint ${sprintIdOrObject} inválidos ou não encontrados.`);
+        }
+
+        console.log(`🔍 Processando Sprint: ${sprintMetadata.name}...`);
+
+        // 1. Get Tickets (POST /search/jql)
+        const auth = Buffer.from(`${JIRA_USER}:${JIRA_TOKEN}`).toString('base64');
+        const postData = JSON.stringify({
+            jql: `sprint=${sprintMetadata.id} AND issuetype != Sub-task`,
+            maxResults: 100,
+            fields: ["summary", "assignee", "status", "customfield_10030", "customfield_10014"]
+        });
+
+        const searchData = await new Promise((resolve, reject) => {
+            const req = https.request({
+                hostname: JIRA_HOST, path: '/rest/api/3/search/jql', method: 'POST',
+                headers: { 'Authorization': `Basic ${auth}`, 'Content-Type': 'application/json', 'Accept': 'application/json', 'Content-Length': postData.length }
+            }, (res) => {
+                let data = '';
+                res.on('data', chunk => data += chunk);
+                res.on('end', () => resolve(JSON.parse(data)));
+            });
+            req.on('error', reject); req.write(postData); req.end();
+        });
+
+        if (!searchData || !searchData.issues) throw new Error(`Falha ao buscar tickets para sprint ${sprintMetadata.id}`);
+
+        // 2. Fetch Epic Names
+        const epicIds = [...new Set(searchData.issues.map(i => i.fields.customfield_10014).filter(id => id))];
+        const epicNames = {};
+        for (const id of epicIds) {
+            try {
+                const epicIssue = await fetchJira(`/rest/api/3/issue/${id}?fields=summary`);
+                if (epicIssue.fields) epicNames[id] = epicIssue.fields.summary;
+            } catch (e) { console.warn(`⚠️ Erro épico ${id}`); }
+        }
+
+        // 3. Map Tickets
+        const tickets = searchData.issues.map(issue => {
+            const f = issue.fields;
+            const statusName = f.status ? f.status.name.toLowerCase() : '';
+            const statusCategory = f.status && f.status.statusCategory ? f.status.statusCategory.name.toLowerCase() : '';
+            const isDone = statusCategory === 'done' || 
+                           statusName.includes('concluído') || 
+                           statusName.includes('finalizado') ||
+                           statusName === 'produção' ||
+                           statusName.includes('aguardando produção');
+            const isRemoved = statusName.includes('cancel') || statusName.includes('removido');
+            const isFuraFila = f.summary.toLowerCase().includes('fura-fila') || f.summary.toLowerCase().includes('fura fila');
+
+            return {
+                id: issue.key,
+                title: f.summary,
+                dev: f.assignee ? f.assignee.displayName.split(' ')[0].toUpperCase().substring(0, 3) : 'UNASSIGNED',
+                pts: f.customfield_10030 || 0,
+                status: isDone ? 'done' : (isRemoved ? 'removed' : 'escaped'),
+                epic: epicNames[f.customfield_10014] || 'Sem Épico',
+                type: isFuraFila ? 'fura-fila' : 'planned'
+            };
+        });
+
+        // 4. Parse Goal and Swat
+        const goalRaw = sprintMetadata.goal || '';
+        const goalParts = goalRaw.split('\n');
+        const goal = goalParts[0].replace('Objetivo:', '').trim();
+        const swatRaw = goalParts.find(p => p.toLowerCase().includes('swat')) || '';
+        const swat = swatRaw.split(':')[1]?.split(',').map(s => s.trim().toUpperCase().substring(0, 3)) || [];
+
+        const newSprint = {
+            id: sprintMetadata.name.includes('|') ? sprintMetadata.name.split('|').pop().trim() : sprintMetadata.name,
+            goal: goal || 'Sem objetivo definido',
+            period: sprintMetadata.startDate ? `${new Date(sprintMetadata.startDate).toLocaleDateString('pt-BR')} - ${new Date(sprintMetadata.endDate).toLocaleDateString('pt-BR')}` : 'Período não definido',
+            swat: swat,
+            tickets: tickets
+        };
+
+        // 5. Update sprints.js
+        const filePath = path.join(__dirname, 'sprints.js');
+        let currentData = [];
+        if (fs.existsSync(filePath)) {
+            const content = fs.readFileSync(filePath, 'utf8');
+            const jsonMatch = content.match(/\[[\s\S]*\]/);
+            if (jsonMatch) {
+                try { currentData = eval(jsonMatch[0]); } catch(e) { currentData = []; }
+            }
+        }
+
+        currentData = currentData.filter(s => s.id !== newSprint.id);
+        currentData.push(newSprint);
+        currentData.sort((a, b) => a.id.localeCompare(b.id));
+
+        fs.writeFileSync(filePath, `const MOMENTUM_SPRINTS_DATA = ${JSON.stringify(currentData, null, 4)};`);
+        console.log(`✅ Sprint ${newSprint.id} sincronizada!`);
+        return newSprint;
+
+    } catch (error) {
+        console.error(`❌ Erro no Sync da Sprint:`, error.message);
+        throw error;
+    }
+}
+
+module.exports = { syncSprint, fetchJira };
