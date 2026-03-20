@@ -36,13 +36,23 @@
         .actions { display: flex; gap: 10px; align-items: center; }
 
         button {
-            padding: 10px 20px; border-radius: 6px; border: 1px solid var(--border);
-            background: var(--card-bg); color: var(--text-main); cursor: pointer;
-            font-weight: 600; transition: all 0.2s;
+            height: 42px;
+            padding: 0 20px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            color: var(--text-main);
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
+
         button:hover { opacity: 0.8; }
         .btn-sync { background: var(--primary); color: white; border: none; }
-        .btn-toggle { padding: 10px; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
+        .btn-toggle { width: 42px; padding: 0; font-size: 1.2rem; }
 
         .filters {
             display: flex; gap: 15px; margin-bottom: 30px; background: var(--card-bg);
@@ -61,13 +71,19 @@
         .card-title { font-size: 0.9rem; color: rgba(255, 255, 255, 0.8); margin-bottom: 10px; font-weight: 600; text-transform: uppercase; }
         .card-value { font-size: 2.5rem; font-weight: 800; margin-bottom: 5px; }
         .trend {
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             display: flex;
             align-items: center;
-            gap: 5px;
-            font-weight: 500;
-            color: rgba(255, 255, 255, 0.9);
+            gap: 4px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 12px;
+            width: fit-content;
+            margin-top: 5px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
         }
+        .trend-good { background-color: #22c55e; color: white; }
+        .trend-bad { background-color: #ef4444; color: white; }
 
         .chart-container, .table-container, .epics-container {
             margin-bottom: 30px; background: var(--card-bg); padding: 20px;
@@ -138,12 +154,13 @@
         .epic-details { flex: 1; }
         .epic-chart-box { width: 150px; height: 150px; }
     </style>
+    <script src="sprints.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
     <header>
-        <div class="logo-container"><img src="logo.jpg" alt="Momentum Logo"></div>
+        <div class="logo-container"><img src="logo.jpg" alt="Momentum Logo" id="mainLogo"></div>
         <div class="actions">
             <button class="btn-toggle" id="themeToggle" title="Alternar Tema">🌓</button>
             <button>Relatório do Diretor</button>
@@ -152,32 +169,47 @@
         </div>
     </header>
 
-    <div class="filters">
-        <div class="filter-group"><label>Ano</label><select><option>2026</option></select></div>
-        <div class="filter-group"><label>Sprint</label><select><option>SP42</option></select></div>
-        <div class="filter-group"><label>Dev</label><select><option>TODOS</option><option>VAL</option><option>WAN</option><option>IDY</option><option>CHA</option><option>GUS</option></select></div>
+    <div class="filters" style="display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 30px;">
+        <!-- Filtros à esquerda -->
+        <div style="display: flex; gap: 15px;">
+            <div class="filter-group"><label>Ano</label><select id="filter-year" style="min-width: 80px;"><option>2026</option></select></div>
+            <div class="filter-group"><label>Sprint</label><select id="filter-sprint" style="min-width: 100px;"><!-- Dinâmico --></select></div>
+            <div class="filter-group"><label>Dev</label><select id="filter-dev" style="min-width: 100px;"><!-- Dinâmico --></select></div>
+        </div>
+
+        <!-- Objetivo e SWAT à direita -->
+        <div id="sprint-focus-container" style="display: flex; justify-content: space-between; align-items: center; border-left: 1px solid var(--border); padding-left: 30px; gap: 20px;">
+            <div style="flex: 1;">
+                <label style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; display: block; margin-bottom: 2px;">🎯 Objetivo</label>
+                <p id="sprint-goal-text" style="font-size: 0.9rem; font-weight: 500; color: var(--text-main); margin: 0; line-height: 1.2;">-</p>
+            </div>
+            <div style="min-width: 120px;">
+                <label style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; display: block; margin-bottom: 4px;">🛡️ SWAT</label>
+                <div id="sprint-swat-list" style="display: flex; gap: 4px;"></div>
+            </div>
+        </div>
     </div>
 
     <div class="kpi-grid">
         <div class="card card-entregues">
             <div class="card-title">Pontos Entregues</div>
-            <div class="card-value">84</div>
-            <div class="trend">▲ 12% vs anterior</div>
+            <div class="card-value" id="kpi-entregues-val">0</div>
+            <div class="trend" id="kpi-entregues-trend">+ 0%</div>
         </div>
         <div class="card card-escapados">
             <div class="card-title">Pontos Escapados</div>
-            <div class="card-value">12</div>
-            <div class="trend">▼ 5% vs anterior</div>
+            <div class="card-value" id="kpi-escapados-val">0</div>
+            <div class="trend" id="kpi-escapados-trend">- 0%</div>
         </div>
         <div class="card card-furafilas">
             <div class="card-title">Total Fura Filas</div>
-            <div class="card-value">18</div>
-            <div class="trend">▲ 20% vs anterior</div>
+            <div class="card-value" id="kpi-furafilas-val">0</div>
+            <div class="trend" id="kpi-furafilas-trend">+ 0%</div>
         </div>
         <div class="card card-performance">
             <div class="card-title">Performance</div>
-            <div class="card-value">92%</div>
-            <div class="trend">▲ 2% vs anterior</div>
+            <div class="card-value" id="kpi-performance-val">0%</div>
+            <div class="trend" id="kpi-performance-trend">+ 0%</div>
         </div>
     </div>
 
@@ -190,91 +222,148 @@
         <div class="section-header"><h2>Desempenho por Dev</h2><p>Visão de entregas individuais.</p></div>
         <table>
             <thead><tr><th>Dev</th><th>Planejados (E/T)</th><th>Fura Filas (E/T)</th><th>Total Pontos</th></tr></thead>
-            <tbody>
-                <tr><td>VAL</td><td>12 / 12</td><td>3 / 3</td><td><span class="badge points-dark-green">15</span></td></tr>
-                <tr><td>WAN</td><td>10 / 11</td><td>4 / 4</td><td><span class="badge points-dark-green">14</span></td></tr>
-                <tr><td>IDY</td><td>8 / 10</td><td>2 / 2</td><td><span class="badge points-light-green">10</span></td></tr>
-                <tr><td>CHA</td><td>7 / 9</td><td>1 / 1</td><td><span class="badge points-orange">8</span></td></tr>
-                <tr><td>GUS</td><td>4 / 5</td><td>0 / 0</td><td><span class="badge points-red">4</span></td></tr>
+            <tbody id="dev-table-body">
+                <!-- Preenchido via JS -->
             </tbody>
         </table>
     </div>
 
     <div class="chart-container">
-        <div class="section-header"><h2>Consistência de Entrega por Dev</h2><p>Pontos entregues por sprint por integrante.</p></div>
+        <div class="section-header"><h2>Evolução dos devs</h2><p>Pontos entregues por sprint por integrante.</p></div>
         <canvas id="devLineChart" height="100"></canvas>
     </div>
 
     <div class="epics-container">
         <div class="section-header"><h2>Épicos</h2><p>Pra onde estamos indo?</p></div>
-        <div class="epic-list">
-            <!-- Épico 1 -->
-            <details class="epic-item">
-                <summary>
-                    <div class="epic-header-info">
-                        <span>🚀 Redesign Checkout</span>
-                        <span class="epic-progress-mini">planejados 9/13 (69%) | fura-filas: 3/5 (60%)</span>
-                    </div>
-                    <div class="epic-mini-chart"><canvas id="mini-pizza-1"></canvas></div>
-                    <span style="margin-left: 15px;">▼</span>
-                </summary>
-                <div class="epic-content">
-                    <div class="epic-column">
-                        <div class="epic-col-title">Entregues</div>
-                        <ul class="epic-tasks">
-                            <li><span class="status-dot dot-done"></span> <span class="task-dev">VAL</span> <a href="#" class="task-link">Integração PIX</a> <span class="task-pts">2.0 pts</span></li>
-                            <li><span class="status-dot dot-done"></span> <span class="task-dev">IDY</span> <a href="#" class="task-link">Novo Layout Mobile</a> <span class="task-pts">5.0 pts</span></li>
-                            <li><span class="status-dot dot-done"></span> <span class="task-dev">VAL</span> <a href="#" class="task-link">Refatoração de Checkout</a> <span class="task-pts">8.0 pts</span></li>
-                        </ul>
-                    </div>
-                    <div class="epic-column">
-                        <div class="epic-col-title">Escaparam / Removidos</div>
-                        <ul class="epic-tasks">
-                            <li><span class="status-dot dot-escaped"></span> <span class="task-dev">CHA</span> <a href="#" class="task-link">Validação de Endereço</a> <span class="task-pts">3.0 pts</span></li>
-                            <li><span class="status-dot dot-escaped"></span> <span class="task-dev">GUS</span> <a href="#" class="task-link">Testes A/B Checkout</a> <span class="task-pts">2.0 pts</span></li>
-                        </ul>
-                    </div>
-                </div>
-            </details>
-
-            <!-- Épico 2 -->
-            <details class="epic-item">
-                <summary>
-                    <div class="epic-header-info">
-                        <span>📊 Dashboard Momentum</span>
-                        <span class="epic-progress-mini">planejados 4/8 (50%) | fura-filas: 1/1 (100%)</span>
-                    </div>
-                    <div class="epic-mini-chart"><canvas id="mini-pizza-2"></canvas></div>
-                    <span style="margin-left: 15px;">▼</span>
-                </summary>
-                <div class="epic-content">
-                    <div class="epic-column">
-                        <div class="epic-col-title">Entregues</div>
-                        <ul class="epic-tasks">
-                            <li><span class="status-dot dot-done"></span> <span class="task-dev">WAN</span> <a href="#" class="task-link">Mockup HTML</a> <span class="task-pts">1.0 pts</span></li>
-                            <li><span class="status-dot dot-done"></span> <span class="task-dev">WAN</span> <a href="#" class="task-link">Gráficos de Evolução</a> <span class="task-pts">3.0 pts</span></li>
-                        </ul>
-                    </div>
-                    <div class="epic-column">
-                        <div class="epic-col-title">Escaparam / Removidos</div>
-                        <ul class="epic-tasks">
-                            <li><span class="status-dot dot-escaped"></span> <span class="task-dev">IDY</span> <a href="#" class="task-link">Integração API Jira</a> <span class="task-pts">5.0 pts</span></li>
-                            <li><span class="status-dot dot-removed"></span> <span class="task-dev">CHA</span> <a href="#" class="task-link">Persistência de Dados</a> <span class="task-pts">2.0 pts</span></li>
-                        </ul>
-                    </div>
-                </div>
-            </details>
+        <div class="epic-list" id="epic-list-container">
+            <!-- Preenchido via JS -->
         </div>
     </div>
 
     <script>
+        function getUniqueDevs() {
+            const devs = new Set();
+            MOMENTUM_SPRINTS_DATA.forEach(sprint => {
+                sprint.tickets.forEach(t => devs.add(t.dev));
+            });
+            return Array.from(devs).sort();
+        }
+
+        function loadData() {
+            const selectedSprintId = document.getElementById('filter-sprint').value;
+            const selectedDev = document.getElementById('filter-dev').value;
+            const sprint = MOMENTUM_SPRINTS_DATA.find(s => s.id === selectedSprintId) || MOMENTUM_SPRINTS_DATA[MOMENTUM_SPRINTS_DATA.length - 1];
+            const prevSprint = MOMENTUM_SPRINTS_DATA[MOMENTUM_SPRINTS_DATA.indexOf(sprint) - 1] || null;
+            
+            let tickets = sprint.tickets;
+            if (selectedDev !== 'TODOS') tickets = tickets.filter(t => t.dev === selectedDev);
+
+            // Update Sprint Focus (Objective and SWAT)
+            document.getElementById('sprint-goal-text').innerText = sprint.goal;
+            document.getElementById('sprint-swat-list').innerHTML = sprint.swat.map(dev => `<span class="task-dev">${dev}</span>`).join('');
+
+            // KPIs Calculation
+            const calc = (list) => {
+                const done = list.filter(t => t.status === 'done');
+                const delivered = done.reduce((acc, t) => acc + t.pts, 0);
+                const escaped = list.filter(t => t.status === 'escaped').reduce((acc, t) => acc + t.pts, 0);
+                const fura = done.filter(t => t.type === 'fura-fila').reduce((acc, t) => acc + t.pts, 0);
+                const planned = list.filter(t => t.type === 'planned').reduce((acc, t) => acc + t.pts, 0);
+                const perf = (planned + fura) > 0 ? Math.round((delivered / (planned + fura)) * 100) : 0;
+                return { delivered, escaped, fura, perf };
+            };
+
+            const curr = calc(tickets);
+            let trends = { delivered: 0, escaped: 0, fura: 0, perf: 0 };
+
+            if (prevSprint) {
+                let prevTickets = prevSprint.tickets;
+                if (selectedDev !== 'TODOS') prevTickets = prevTickets.filter(t => t.dev === selectedDev);
+                const prev = calc(prevTickets);
+                trends = {
+                    delivered: prev.delivered > 0 ? Math.round(((curr.delivered - prev.delivered) / prev.delivered) * 100) : 0,
+                    escaped: prev.escaped > 0 ? Math.round(((curr.escaped - prev.escaped) / prev.escaped) * 100) : 0,
+                    fura: prev.fura > 0 ? Math.round(((curr.fura - prev.fura) / prev.fura) * 100) : 0,
+                    perf: curr.perf - prev.perf
+                };
+            }
+
+            const setKPI = (id, val, trend, rev) => {
+                document.getElementById(`kpi-${id}-val`).innerText = id === 'performance' ? `${val}%` : val;
+                const el = document.getElementById(`kpi-${id}-trend`);
+                el.innerText = `${trend >= 0 ? '+' : ''}${trend}%`;
+                let good = trend >= 0; if (rev) good = trend <= 0;
+                el.className = trend === 0 ? 'trend' : `trend ${good ? 'trend-good' : 'trend-bad'}`;
+                if (trend === 0) el.style.backgroundColor = '#94a3b8'; else el.style.backgroundColor = '';
+            };
+
+            setKPI('entregues', curr.delivered, trends.delivered);
+            setKPI('escapados', curr.escaped, trends.escaped, true);
+            setKPI('furafilas', curr.fura, trends.fura, true);
+            setKPI('performance', curr.perf, trends.perf);
+
+            // Dev Table
+            const tableBody = document.getElementById('dev-table-body');
+            tableBody.innerHTML = getUniqueDevs().map(devId => {
+                const devTickets = sprint.tickets.filter(t => t.dev === devId);
+                if (devTickets.length === 0 || (selectedDev !== 'TODOS' && devId !== selectedDev)) return '';
+                const pD = devTickets.filter(t => t.type === 'planned' && t.status === 'done').reduce((a, t) => a + t.pts, 0);
+                const pT = devTickets.filter(t => t.type === 'planned').reduce((a, t) => a + t.pts, 0);
+                const fD = devTickets.filter(t => t.type === 'fura-fila' && t.status === 'done').reduce((a, t) => a + t.pts, 0);
+                const fT = devTickets.filter(t => t.type === 'fura-fila').reduce((a, t) => a + t.pts, 0);
+                const total = pD + fD;
+                let bc = total > 13 ? 'points-dark-green' : total >= 10 ? 'points-light-green' : total >= 6 ? 'points-orange' : 'points-red';
+                return `<tr><td>${devId}</td><td>${pD}/${pT}</td><td>${fD}/${fT}</td><td><span class="badge ${bc}">${total}</span></td></tr>`;
+            }).join('');
+
+            // Epics
+            const epicMap = {};
+            tickets.forEach(t => {
+                if (!epicMap[t.epic]) epicMap[t.epic] = { title: t.epic, done: 0, total: 0, pD: 0, pT: 0, fD: 0, fT: 0, tasks: { e: [], s: [] } };
+                epicMap[t.epic].total += t.pts;
+                if (t.type === 'planned') epicMap[t.epic].pT += t.pts; else epicMap[t.epic].fT += t.pts;
+                if (t.status === 'done') {
+                    epicMap[t.epic].done += t.pts; if (t.type === 'planned') epicMap[t.epic].pD += t.pts; else epicMap[t.epic].fD += t.pts;
+                    epicMap[t.epic].tasks.e.push({ dev: t.dev, title: t.title, pts: t.pts });
+                } else {
+                    epicMap[t.epic].tasks.s.push({ dev: t.dev, title: t.title, pts: t.pts, status: t.status });
+                }
+            });
+
+            const epics = Object.values(epicMap).sort((a, b) => b.done - a.done);
+            document.getElementById('epic-list-container').innerHTML = epics.map((e, i) => `
+                <details class="epic-item">
+                    <summary>
+                        <div class="epic-header-info"><span>${e.title}</span><span class="epic-progress-mini">planejados ${e.pD}/${e.pT} | fura-filas: ${e.fD}/${e.fT}</span></div>
+                        <div class="epic-mini-chart"><canvas id="mini-pizza-${i}"></canvas></div>
+                        <span style="margin-left: 15px;">▼</span>
+                    </summary>
+                    <div class="epic-content">
+                        <div class="epic-column"><div class="epic-col-title">Entregues</div><ul class="epic-tasks">${e.tasks.e.map(t => `<li><span class="status-dot dot-done"></span> <span class="task-dev">${t.dev}</span> <a href="#" class="task-link">${t.title}</a> <span class="task-pts">${t.pts}.0 pts</span></li>`).join('')}</ul></div>
+                        <div class="epic-column"><div class="epic-col-title">Escaparam / Removidos</div><ul class="epic-tasks">${e.tasks.s.map(t => `<li><span class="status-dot dot-${t.status}"></span> <span class="task-dev">${t.dev}</span> <a href="#" class="task-link">${t.title}</a> <span class="task-pts">${t.pts}.0 pts</span></li>`).join('')}</ul></div>
+                    </div>
+                </details>`).join('');
+            window.currentEpics = epics;
+        }
+
+        function initFilters() {
+            const sprintFilter = document.getElementById('filter-sprint');
+            sprintFilter.innerHTML = MOMENTUM_SPRINTS_DATA.map(s => `<option value="${s.id}">${s.id}</option>`).reverse().join('');
+            const devFilter = document.getElementById('filter-dev');
+            devFilter.innerHTML = `<option>TODOS</option>` + getUniqueDevs().map(id => `<option>${id}</option>`).join('');
+            sprintFilter.addEventListener('change', () => { loadData(); renderCharts(); });
+            devFilter.addEventListener('change', () => { loadData(); renderCharts(); });
+        }
+
         const themeToggle = document.getElementById('themeToggle');
         const body = document.body;
-        if (localStorage.getItem('theme') === 'dark') { body.classList.add('dark-mode'); }
+        const mainLogo = document.getElementById('mainLogo');
+        function updateLogo() { mainLogo.src = body.classList.contains('dark-mode') ? 'logo-dark.png' : 'logo.jpg'; }
+        if (localStorage.getItem('theme') === 'dark') { body.classList.add('dark-mode'); updateLogo(); }
         themeToggle.addEventListener('click', () => {
             body.classList.toggle('dark-mode');
             localStorage.setItem('theme', body.classList.contains('dark-mode') ? 'dark' : 'light');
-            updateCharts();
+            updateLogo(); updateCharts();
         });
 
         const ctxPlanning = document.getElementById('planningChart').getContext('2d');
@@ -286,99 +375,84 @@
             const gridColor = isDark ? '#334155' : '#e2e8f0';
             const textColor = isDark ? '#94a3b8' : '#64748b';
 
-            // Custom Plugin for Average Line
-            const horizontalLinePlugin = {
-                id: 'horizontalLine',
-                afterDraw: (chart) => {
-                    const { ctx, chartArea: { left, right }, scales: { y } } = chart;
-                    const yValue = y.getPixelForValue(81.6);
-                    ctx.save();
-                    ctx.beginPath(); ctx.lineWidth = 2; ctx.setLineDash([5, 5]); ctx.strokeStyle = '#3b82f6';
-                    ctx.moveTo(left, yValue); ctx.lineTo(right, yValue); ctx.stroke();
-                    const text = 'Média de Entrega (81.6)';
-                    ctx.font = '600 12px sans-serif';
-                    const textWidth = ctx.measureText(text).width;
-                    ctx.setLineDash([]); ctx.fillStyle = isDark ? 'rgba(30, 41, 59, 0.9)' : 'rgba(255, 255, 255, 0.8)';
-                    ctx.fillRect(right - textWidth - 10, yValue - 22, textWidth + 10, 18);
-                    ctx.fillStyle = '#3b82f6'; ctx.textAlign = 'right'; ctx.fillText(text, right - 5, yValue - 8);
-                    ctx.restore();
-                }
-            };
+            const sprintLabels = MOMENTUM_SPRINTS_DATA.map(s => s.id);
+            const deliveredBySprint = MOMENTUM_SPRINTS_DATA.map(s => s.tickets.filter(t => t.status === 'done').reduce((acc, t) => acc + t.pts, 0));
+            const plannedBySprint = MOMENTUM_SPRINTS_DATA.map(s => s.tickets.filter(t => t.type === 'planned').reduce((acc, t) => acc + t.pts, 0));
+            const avgDelivered = deliveredBySprint.reduce((a, b) => a + b, 0) / deliveredBySprint.length;
 
-            // Restore "Tank" Planning Chart
             if (planningChart) planningChart.destroy();
             planningChart = new Chart(ctxPlanning, {
                 type: 'bar',
-                plugins: [horizontalLinePlugin],
+                plugins: [{
+                    id: 'horizontalLine',
+                    afterDraw: (chart) => {
+                        const { ctx, chartArea: { left, right }, scales: { y } } = chart;
+                        const yValue = y.getPixelForValue(avgDelivered);
+                        ctx.save(); ctx.beginPath(); ctx.lineWidth = 2; ctx.setLineDash([5, 5]); ctx.strokeStyle = '#3b82f6';
+                        ctx.moveTo(left, yValue); ctx.lineTo(right, yValue); ctx.stroke();
+                        const text = `Média (${Math.round(avgDelivered)})`;
+                        const textWidth = ctx.measureText(text).width;
+                        ctx.setLineDash([]); ctx.fillStyle = isDark ? 'rgba(30, 41, 59, 0.9)' : 'rgba(255, 255, 255, 0.8)';
+                        ctx.fillRect(right - textWidth - 10, yValue - 22, textWidth + 10, 18);
+                        ctx.fillStyle = '#3b82f6'; ctx.textAlign = 'right'; ctx.fillText(text, right - 5, yValue - 8); ctx.restore();
+                    }
+                }],
                 data: {
-                    labels: ['SP39', 'SP40', 'SP41', 'SP42', 'SP43', 'SP44'],
+                    labels: sprintLabels,
                     datasets: [
-                        { label: 'Entregue (Combustível)', data: [85, 92, 70, 88, 60, 95], backgroundColor: '#166534', borderRadius: 4, order: 1, barPercentage: 0.8, categoryPercentage: 0.8 },
-                        { label: 'Estimado (Tanque)', data: [100, 100, 110, 95, 120, 105], backgroundColor: isDark ? '#334155' : '#cbd5e1', borderRadius: 4, order: 2, barPercentage: 0.8, categoryPercentage: 0.8 }
+                        { label: 'Entregue', data: deliveredBySprint, backgroundColor: '#166534', borderRadius: 4, order: 1, barPercentage: 0.8, categoryPercentage: 0.8 },
+                        { label: 'Planejado', data: plannedBySprint, backgroundColor: isDark ? '#334155' : '#cbd5e1', borderRadius: 4, order: 2, barPercentage: 0.8, categoryPercentage: 0.8 }
                     ]
                 },
                 options: {
                     responsive: true,
                     scales: {
                         x: { stacked: true, grid: { display: false }, ticks: { color: textColor } },
-                        y: { beginAtZero: true, stacked: false, grid: { color: gridColor }, ticks: { color: textColor }, title: { display: true, text: 'Points', color: textColor } }
+                        y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor }, title: { display: true, text: 'Story Points', color: textColor } }
                     },
                     plugins: { legend: { position: 'top', labels: { color: textColor } } }
                 }
             });
 
-            // Dev Line Chart
             if (devLineChart) devLineChart.destroy();
             devLineChart = new Chart(ctxDevLine, {
                 type: 'line',
                 data: {
-                    labels: ['SP39', 'SP40', 'SP41', 'SP42', 'SP43', 'SP44'],
-                    datasets: [
-                        { label: 'VAL', data: [15, 12, 16, 14, 15, 17], borderColor: '#166534', tension: 0.3, borderWidth: 3 },
-                        { label: 'WAN', data: [14, 13, 15, 12, 14, 16], borderColor: '#3b82f6', tension: 0.3, borderWidth: 3 },
-                        { label: 'IDY', data: [10, 11, 9, 12, 10, 13], borderColor: '#84cc16', tension: 0.3, borderWidth: 3 }
-                    ]
+                    labels: sprintLabels,
+                    datasets: getUniqueDevs().map((devId, i) => {
+                        const colors = ['#166534', '#3b82f6', '#84cc16', '#f97316', '#ef4444'];
+                        return { label: devId, data: MOMENTUM_SPRINTS_DATA.map(s => s.tickets.filter(t => t.dev === devId && t.status === 'done').reduce((acc, t) => acc + t.pts, 0)), borderColor: colors[i % colors.length], tension: 0.3, borderWidth: 3 };
+                    })
                 },
                 options: {
                     responsive: true,
                     scales: {
                         x: { grid: { display: false }, ticks: { color: textColor } },
-                        y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor }, title: { display: true, text: 'Points', color: textColor } }
+                        y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor }, title: { display: true, text: 'Story Points', color: textColor } }
                     },
-                    plugins: { legend: { labels: { color: textColor } } }
+                    plugins: { legend: { position: 'top', labels: { color: textColor } } }
                 }
             });
+
+            renderEpicCharts(isDark, window.currentEpics);
         }
 
-        function renderEpicCharts(isDark) {
-            const epics = [
-                { id: 'mini-pizza-1', done: 9, total: 13 },
-                { id: 'mini-pizza-2', done: 4, total: 8 }
-            ];
-
-            epics.forEach(epic => {
-                const canvas = document.getElementById(epic.id);
+        function renderEpicCharts(isDark, epics) {
+            if (!epics) return;
+            epics.forEach((epic, index) => {
+                const canvas = document.getElementById(`mini-pizza-${index}`);
                 if (!canvas) return;
-                const ctx = canvas.getContext('2d');
-                new Chart(ctx, {
+                new Chart(canvas.getContext('2d'), {
                     type: 'pie',
-                    data: {
-                        datasets: [{
-                            data: [epic.done, epic.total - epic.done],
-                            backgroundColor: ['#166534', isDark ? '#334155' : '#e2e8f0'],
-                            borderWidth: 0
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false }, tooltip: { enabled: false } }
-                    }
+                    data: { datasets: [{ data: [epic.done, epic.total - epic.done], backgroundColor: ['#166534', isDark ? '#334155' : '#e2e8f0'], borderWidth: 0 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: false } } }
                 });
             });
         }
 
         function updateCharts() { renderCharts(); }
+        initFilters();
+        loadData();
         renderCharts();
     </script>
 </body>
