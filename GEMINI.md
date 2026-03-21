@@ -49,8 +49,10 @@ Aplicação web feita em node. Dashboard de acompanhamento de sprints. A missão
 1. Criar `claude-sessions/yyyy-mm-dd-nome-significativo.md` com resumo do que foi feito, decisões tomadas e contexto relevante. **Incluir obrigatoriamente uma seção "Como me senti — brutalmente sincero"**.
 2. Atualizar `CLAUDE.md` se houver descobertas arquiteturais ou armadilhas novas.
 
-### Dicas de ouro
+### Dicas de Ouro
 - Claude está rodando no PowerShell (Windows).
+- **Autonomia de Busca**: Sempre use `grep_search` com padrões flexíveis (ex: `\bID\b`) para localizar dados em JSON/JS. Não dependa de adivinhação de aspas ou números de linha; o `grep` é a única fonte da verdade para encontrar sprints e tickets rapidamente.
+- **Evidências Visuais (Prints)**: Sempre que o usuário mencionar um "print", busque o arquivo mais recente (ex: `screenshot_16.png`) na pasta `C:\Users\brnra019\Documents\Lightshot`. Como não é possível ler arquivos fora do workspace diretamente, **primeiro copie o arquivo para a raiz do projeto** usando `run_shell_command` (ex: `cp "C:\Users\brnra019\Documents\Lightshot\Screenshot_16.png" "print16.png"`) e depois use `read_file` no arquivo copiado para analisá-lo.
 - Quando o usuário falar pra olhar a colinha, analise o arquivo `colinha.txt` na raíz.
 - **Logs de produção**: Acessados via Grafana (Loki/LogQL).
 
@@ -65,7 +67,7 @@ Aplicação web feita em node. Dashboard de acompanhamento de sprints. A missão
     - Endpoint de Busca: `/rest/api/3/search/jql` (POST)
 - **Convenções do Time**:
     - Fura-fila: Identificado pela presença de `[fura-fila]` ou `[fura fila]` no título do ticket.
-    - Status Done: Inclui `Concluído`, `Finalizado`, `Finalização Produção` e `Aguardando Produção`.
+    - Status Done: Inclui `Concluído`, `Finalizado`, `Finalização Produção`, `Aguardando Produção` e `Aguardando Validação`.
 - **Node.js**:
     - O pacote `open` em versões recentes exige `import()` dinâmico se o projeto for CommonJS (`require`).
 
