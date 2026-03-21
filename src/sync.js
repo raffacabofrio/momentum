@@ -47,7 +47,7 @@ async function syncSprint(sprintIdOrObject) {
         const postData = JSON.stringify({
             jql: `sprint=${sprintMetadata.id} AND issuetype != Sub-task`,
             maxResults: 100,
-            fields: ["summary", "assignee", "status", "customfield_10030", "customfield_10014"]
+            fields: ["summary", "assignee", "status", "customfield_10030", "customfield_10014", "customfield_10020"]
         });
 
         const searchData = await new Promise((resolve, reject) => {
@@ -57,7 +57,11 @@ async function syncSprint(sprintIdOrObject) {
             }, (res) => {
                 let data = '';
                 res.on('data', chunk => data += chunk);
-                res.on('end', () => resolve(JSON.parse(data)));
+                res.on('end', () => {
+                const parsed = JSON.parse(data);
+                if (parsed.errorMessages) console.error('🔴 JIRA JQL ERRORS:', parsed.errorMessages);
+                resolve(parsed);
+            });
             });
             req.on('error', reject); req.write(postData); req.end();
         });
@@ -79,12 +83,22 @@ async function syncSprint(sprintIdOrObject) {
             const f = issue.fields;
             const statusName = f.status ? f.status.name.toLowerCase() : '';
             const statusCategory = f.status && f.status.statusCategory ? f.status.statusCategory.name.toLowerCase() : '';
+            
+            // Check if still in sprint
+            const sprintLinks = f.customfield_10020 || [];
+            const isInCurrentSprint = sprintLinks.some(s => s.id === sprintMetadata.id);
+
             const isDone = statusCategory === 'done' || 
                            statusName.includes('concluído') || 
                            statusName.includes('finalizado') ||
+                           statusName.includes('finalização') ||
                            statusName === 'produção' ||
-                           statusName.includes('aguardando produção');
-            const isRemoved = statusName.includes('cancel') || statusName.includes('removido');
+                           statusName.includes('em produção') ||
+                           statusName.includes('aguardando produção') ||
+                           statusName.includes('aguardando validação') ||
+                           statusName.includes('validação');
+            
+            const isRemoved = !isInCurrentSprint || statusName.includes('cancel') || statusName.includes('removido');
             const isFuraFila = f.summary.toLowerCase().includes('fura-fila') || f.summary.toLowerCase().includes('fura fila');
 
             return {
@@ -92,7 +106,7 @@ async function syncSprint(sprintIdOrObject) {
                 title: f.summary,
                 dev: f.assignee ? f.assignee.displayName.split(' ')[0].toUpperCase().substring(0, 3) : 'UNASSIGNED',
                 pts: f.customfield_10030 || 0,
-                status: isDone ? 'done' : (isRemoved ? 'removed' : 'escaped'),
+                status: isRemoved ? 'removed' : (isDone ? 'done' : 'escaped'),
                 epic: epicNames[f.customfield_10014] || 'Sem Épico',
                 type: isFuraFila ? 'fura-fila' : 'planned'
             };
@@ -113,7 +127,26 @@ async function syncSprint(sprintIdOrObject) {
             tickets: tickets
         };
 
-        // 5. Update sprints.js
+        // 5. Merge Removed Tickets (Manual Override)
+        const removedPath = path.join(__dirname, 'sprints-removed.js');
+        if (fs.existsSync(removedPath)) {
+            try {
+                delete require.cache[require.resolve(removedPath)]; // Force read latest
+                const removedData = require(removedPath);
+                const removedForSprint = removedData[newSprint.id] || [];
+                
+                const existingIds = new Set(newSprint.tickets.map(t => t.id));
+                for (const rt of removedForSprint) {
+                    if (!existingIds.has(rt.id)) {
+                        newSprint.tickets.push(rt);
+                    }
+                }
+            } catch (e) {
+                console.warn(`⚠️ Aviso: Falha ao mesclar sprints-removed.js - ${e.message}`);
+            }
+        }
+
+        // 6. Update sprints.js
         const filePath = path.join(__dirname, 'sprints.js');
         let currentData = [];
         if (fs.existsSync(filePath)) {

@@ -264,7 +264,10 @@
 
         function getUniqueDevs() {
             const devs = new Set();
-            MOMENTUM_SPRINTS_DATA.forEach(s => s.tickets.forEach(t => devs.add(t.dev)));
+            const excluded = ['FER', 'UNASSIGNED', 'CLE', 'JES', 'RIA', 'TIA'];
+            MOMENTUM_SPRINTS_DATA.forEach(s => s.tickets.forEach(t => {
+                if (!excluded.includes(t.dev)) devs.add(t.dev);
+            }));
             return Array.from(devs).sort();
         }
 
@@ -370,6 +373,16 @@
                 e.tasks.e.sort((a, b) => a.dev.localeCompare(b.dev));
                 e.tasks.s.sort((a, b) => a.dev.localeCompare(b.dev));
 
+                const renderTasks = (taskList) => {
+                    let lastDev = '';
+                    return taskList.map(t => {
+                        const isNewDev = lastDev && lastDev !== t.dev;
+                        lastDev = t.dev;
+                        const borderStyle = isNewDev ? 'border-top: 1px dashed var(--border); margin-top: 8px; padding-top: 8px;' : '';
+                        return `<li style="${borderStyle}"><span class="status-dot dot-${t.status}"></span> <span class="task-dev">${t.dev}</span> <a href="https://c4br.atlassian.net/browse/${t.id}" target="_blank" class="task-link" title="${t.id}">${t.title}</a> <span class="task-pts">${t.pts}.0 pts</span></li>`;
+                    }).join('');
+                };
+
                 return `
                 <details class="epic-item">
                     <summary>
@@ -378,8 +391,8 @@
                         <span style="margin-left: 15px;">▼</span>
                     </summary>
                     <div class="epic-content">
-                        <div class="epic-column"><div class="epic-col-title">Entregues</div><ul class="epic-tasks">${e.tasks.e.map(t => `<li><span class="status-dot dot-done"></span> <span class="task-dev">${t.dev}</span> <a href="#" class="task-link">${t.title}</a> <span class="task-pts">${t.pts}.0 pts</span></li>`).join('')}</ul></div>
-                        <div class="epic-column"><div class="epic-col-title">Escaparam / Removidos</div><ul class="epic-tasks">${e.tasks.s.map(t => `<li><span class="status-dot dot-${t.status}"></span> <span class="task-dev">${t.dev}</span> <a href="#" class="task-link">${t.title}</a> <span class="task-pts">${t.pts}.0 pts</span></li>`).join('')}</ul></div>
+                        <div class="epic-column"><div class="epic-col-title">Entregues</div><ul class="epic-tasks">${renderTasks(e.tasks.e)}</ul></div>
+                        <div class="epic-column"><div class="epic-col-title">Escaparam / Removidos</div><ul class="epic-tasks">${renderTasks(e.tasks.s)}</ul></div>
                     </div>
                 </details>`;
             }).join('');
@@ -438,15 +451,41 @@
                 data: {
                     labels: sprintLabels,
                     datasets: [
-                        { label: 'Entregue', data: delivered, backgroundColor: '#166534', borderRadius: 4, order: 1, barPercentage: 0.8, categoryPercentage: 0.8 },
-                        { label: 'Comprometido', data: committed, backgroundColor: isDark ? '#334155' : '#cbd5e1', borderRadius: 4, order: 2, barPercentage: 0.8, categoryPercentage: 0.8 }
+                        { 
+                            label: 'Entregue', 
+                            data: delivered, 
+                            backgroundColor: '#166534', 
+                            borderRadius: 4, 
+                            order: 1, 
+                            barPercentage: 0.5, 
+                            categoryPercentage: 0.8 
+                        },
+                        { 
+                            label: 'Comprometido', 
+                            data: committed, 
+                            backgroundColor: isDark ? 'rgba(51, 65, 85, 0.5)' : 'rgba(203, 213, 225, 0.5)', 
+                            borderRadius: 4, 
+                            order: 2, 
+                            barPercentage: 0.5, 
+                            categoryPercentage: 0.8 
+                        }
                     ]
                 },
                 options: {
                     responsive: true,
                     scales: {
-                        x: { stacked: false, grid: { display: false }, ticks: { color: textColor } },
-                        y: { beginAtZero: true, stacked: false, grid: { color: gridColor }, ticks: { color: textColor }, title: { display: true, text: 'Points', color: textColor } }
+                        x: { 
+                            stacked: true, // Forçar sobreposição quando grouped é false
+                            grid: { display: false }, 
+                            ticks: { color: textColor } 
+                        },
+                        y: { 
+                            beginAtZero: true, 
+                            stacked: false, 
+                            grid: { color: gridColor }, 
+                            ticks: { color: textColor }, 
+                            title: { display: true, text: 'Points', color: textColor } 
+                        }
                     },
                     plugins: { legend: { position: 'top', labels: { color: textColor } } }
                 }
