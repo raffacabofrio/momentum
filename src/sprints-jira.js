@@ -1204,7 +1204,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 3,
                 "status": "escaped",
                 "epic": "Integrações Catálogos 3os (google, meta, mlivre, carrefour)",
-                "type": "fura-fila"
+                "type": "fura-fila",
+                "comment": ""
             },
             {
                 "id": "DEAT-12122",
@@ -1321,7 +1322,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 8,
                 "status": "escaped",
                 "epic": "Integrações Catálogos 3os (google, meta, mlivre, carrefour)",
-                "type": "planned"
+                "type": "planned",
+                "comment": ""
             },
             {
                 "id": "DEAT-11822",
