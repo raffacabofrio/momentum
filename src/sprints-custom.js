@@ -207,6 +207,16 @@ module.exports = {
             "epic": "Integrações Catálogos 3os (google, meta, mlivre, carrefour)",
             "type": "planned",
             "comment": ""
+        },
+        {
+            "id": "DEAT-7467",
+            "title": "[Backend] Informar Zubale sobre Faturamento",
+            "dev": "RAF",
+            "pts": 1,
+            "status": "done",
+            "epic": "Melhoria de Produto",
+            "type": "planned",
+            "comment": "fdsd df sf  ffds ffsf sf"
         }
     ]
 };

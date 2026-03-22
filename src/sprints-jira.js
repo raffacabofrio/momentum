@@ -1204,8 +1204,7 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 3,
                 "status": "escaped",
                 "epic": "Integrações Catálogos 3os (google, meta, mlivre, carrefour)",
-                "type": "fura-fila",
-                "comment": ""
+                "type": "fura-fila"
             },
             {
                 "id": "DEAT-12122",
@@ -1322,8 +1321,7 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 8,
                 "status": "escaped",
                 "epic": "Integrações Catálogos 3os (google, meta, mlivre, carrefour)",
-                "type": "planned",
-                "comment": ""
+                "type": "planned"
             },
             {
                 "id": "DEAT-11822",
@@ -1357,7 +1355,7 @@ const MOMENTUM_SPRINTS_DATA = [
                 "title": "[ZUBALE] [OMS] Zubale Status amigáveis para cliente e SAC 2/3",
                 "dev": "RAF",
                 "pts": 8,
-                "status": "escaped",
+                "status": "done",
                 "epic": "Gerenciador Ecommerce Atacadao",
                 "type": "planned"
             },
@@ -1485,7 +1483,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 1,
                 "status": "done",
                 "epic": "Melhoria de Produto",
-                "type": "planned"
+                "type": "planned",
+                "comment": "fdsd df sf  ffds ffsf sf"
             },
             {
                 "id": "DEAT-5833",

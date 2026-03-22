@@ -30,8 +30,8 @@ function setSort(col) {
         currentSort.dir = 'desc';
     }
     updateTableHeaders();
-    loadData();
-    renderCharts();
+    safeRun('Dados (Sort)', loadData);
+    safeRun('Gráficos (Sort)', renderCharts);
 }
 
 function updateTableHeaders() {
@@ -276,12 +276,48 @@ function handleDrop(e, newStatus) {
     const ticket = sprint.tickets.find(t => t.id === ticketId);
     
     if (ticket) {
+        const sourceUl = li.parentElement;
         const targetUl = container.querySelector('ul');
-        targetUl.appendChild(li);
+        const items = Array.from(targetUl.querySelectorAll('li'));
+        const droppedDev = (ticket.dev || '').toUpperCase();
+        
+        const referenceItem = items.find(item => {
+            const itemDev = item.querySelector('.task-dev')?.innerText.toUpperCase() || '';
+            return itemDev > droppedDev;
+        });
+
+        if (referenceItem) {
+            targetUl.insertBefore(li, referenceItem);
+        } else {
+            targetUl.appendChild(li);
+        }
+
+        // Faxina de Separadores
+        [sourceUl, targetUl].forEach(ul => {
+            if (!ul) return;
+            let lastDev = '';
+            const listItems = Array.from(ul.querySelectorAll('li'));
+            listItems.forEach((item, index) => {
+                const devSpan = item.querySelector('.task-dev');
+                const currentDev = devSpan ? devSpan.innerText.trim().toUpperCase() : '';
+                
+                if (index > 0 && lastDev && currentDev && lastDev !== currentDev) {
+                    item.style.borderTop = '1px dashed var(--border)';
+                    item.style.marginTop = '12px';
+                    item.style.paddingTop = '12px';
+                } else {
+                    item.style.borderTop = 'none';
+                    item.style.marginTop = '0';
+                    item.style.paddingTop = '8px';
+                }
+                lastDev = currentDev;
+            });
+        });
+
         const dot = li.querySelector('.status-dot');
         dot.className = `status-dot dot-${newStatus}`;
         ticket.status = newStatus;
-        updateStatsOnly();
+        safeRun('Update Stats (Drop)', updateStatsOnly);
         fetch('/api/ticket/update', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -324,6 +360,8 @@ function updateStatsOnly() {
     
     const elRemovidos = document.getElementById('kpi-removidos-val');
     if(elRemovidos) elRemovidos.innerText = curr.removed;
+
+    safeRun('Gráficos (Drop)', renderCharts);
 }
 
 let currentEditingTicket = null;
@@ -446,19 +484,27 @@ function renderCharts() {
 
     if (ctxDevLine) {
         if (devLineChart) devLineChart.destroy();
+        const selectedDev = document.getElementById('filter-dev')?.value || 'TODOS';
+        
+        let devDatasets = getUniqueDevs().map((devId) => {
+            return { 
+                label: devId, 
+                data: MOMENTUM_SPRINTS_DATA.map(s => s.tickets.filter(t => t.dev === devId && t.status === 'done').reduce((acc, t) => acc + (Number(t.pts) || 0), 0)), 
+                borderColor: DEV_COLORS[devId] || '#94a3b8', 
+                tension: 0.3, 
+                borderWidth: 3 
+            };
+        });
+
+        if (selectedDev !== 'TODOS') {
+            devDatasets = devDatasets.filter(ds => ds.label === selectedDev);
+        }
+
         devLineChart = new Chart(ctxDevLine, {
             type: 'line',
             data: {
                 labels: sprintLabels,
-                datasets: getUniqueDevs().map((devId) => {
-                    return { 
-                        label: devId, 
-                        data: MOMENTUM_SPRINTS_DATA.map(s => s.tickets.filter(t => t.dev === devId && t.status === 'done').reduce((acc, t) => acc + (Number(t.pts) || 0), 0)), 
-                        borderColor: DEV_COLORS[devId] || '#94a3b8', 
-                        tension: 0.3, 
-                        borderWidth: 3 
-                    };
-                })
+                datasets: devDatasets
             },
             options: {
                 responsive: true,
