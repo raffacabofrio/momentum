@@ -4,14 +4,14 @@ const fs = require('fs');
 const https = require('https');
 const path = require('path');
 
-const { syncSprint, fetchJira } = require('./src/sync');
+const { syncSprint, fetchJira } = require('./sync');
 
 const app = express();
 const PORT = 3000;
 const BOARD_ID = 1306;
 
 app.use(express.json());
-app.use(express.static('src'));
+app.use(express.static(__dirname));
 
 // Endpoint de Sync
 app.post('/api/sync', async (req, res) => {
