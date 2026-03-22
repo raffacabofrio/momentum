@@ -183,7 +183,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 3,
                 "status": "escaped",
                 "epic": "Sustentação - Contínuo",
-                "type": "planned"
+                "type": "planned",
+                "comment": "IDY pegou uma semana de folga e esse card ocupa uma sprint inteira. Além disso rolou 4 fura filas."
             },
             {
                 "id": "DEAT-9059",
@@ -201,7 +202,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 5,
                 "status": "escaped",
                 "epic": "Melhorias de Usabilidade",
-                "type": "planned"
+                "type": "planned",
+                "comment": "Tivemos um incidente em QA/PROD e foi a prioridade por conta de 150 pedidos de clientes reais em QA."
             },
             {
                 "id": "DEAT-11318",
@@ -219,7 +221,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 5,
                 "status": "removed",
                 "epic": "PickingPack",
-                "type": "planned"
+                "type": "planned",
+                "comment": "dependemos de nova versão dos gringos que ainda não foi entregue."
             },
             {
                 "id": "DEAT-11044",
@@ -228,7 +231,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 3,
                 "status": "removed",
                 "epic": "2025 Incidentes e problemas em Produção",
-                "type": "planned"
+                "type": "planned",
+                "comment": "não ia dar tempo porque o Val estava de folga. Entrou no meio da sprint."
             },
             {
                 "id": "DEAT-11012",
@@ -346,7 +350,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 3,
                 "status": "escaped",
                 "epic": "2026 Incidentes e problemas em Produção",
-                "type": "planned"
+                "type": "planned",
+                "comment": "É um card fura-fila. Não deu tempo."
             },
             {
                 "id": "DEAT-11421",
@@ -364,7 +369,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 5,
                 "status": "done",
                 "epic": "Incidentes e problemas em produção 2025",
-                "type": "fura-fila"
+                "type": "fura-fila",
+                "comment": "foi 5 pontos."
             },
             {
                 "id": "DEAT-11389",
@@ -391,7 +397,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 3,
                 "status": "done",
                 "epic": "2026 Incidentes e problemas em Produção",
-                "type": "planned"
+                "type": "planned",
+                "comment": "foi 5 pontos."
             },
             {
                 "id": "DEAT-11329",
@@ -409,7 +416,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 3,
                 "status": "escaped",
                 "epic": "Incidentes e problemas em produção 2025",
-                "type": "planned"
+                "type": "planned",
+                "comment": "aguardando validação."
             },
             {
                 "id": "DEAT-11306",
@@ -427,7 +435,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 5,
                 "status": "escaped",
                 "epic": "Sustentação - Contínuo",
-                "type": "planned"
+                "type": "planned",
+                "comment": "Focou no P&P que foi mais dificil que o estimado e teve fura-filas."
             },
             {
                 "id": "DEAT-11085",
@@ -436,7 +445,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 5,
                 "status": "escaped",
                 "epic": "PickingPack",
-                "type": "planned"
+                "type": "planned",
+                "comment": "Foi bastante complexo. Dependemos da França pra fechar. Perto de fechar. Fizemos tudo de infra do nosso lado."
             },
             {
                 "id": "DEAT-11044",
@@ -463,7 +473,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 3,
                 "status": "escaped",
                 "epic": "Melhorias Engenharia",
-                "type": "planned"
+                "type": "planned",
+                "comment": "Ficou focado em outras atividades fora da sprint."
             },
             {
                 "id": "DEAT-10453",
@@ -472,7 +483,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 3,
                 "status": "escaped",
                 "epic": "Incidentes e problemas em produção 2025",
-                "type": "planned"
+                "type": "planned",
+                "comment": "aguardando validação."
             },
             {
                 "id": "DEAT-10284",
@@ -490,7 +502,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 5,
                 "status": "escaped",
                 "epic": "2026 Incidentes e problemas em Produção",
-                "type": "planned"
+                "type": "planned",
+                "comment": "não deu tempo. Ajudou na ativação de lojas que deu um pouco mais de trabalho. Além disso Wan só trabalhou uma semana nessa sprint."
             },
             {
                 "id": "DEAT-9786",
@@ -499,7 +512,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 3,
                 "status": "escaped",
                 "epic": "Sustentação - Contínuo",
-                "type": "planned"
+                "type": "planned",
+                "comment": "Talvez finaliza dentro da sprint."
             },
             {
                 "id": "DEAT-7467",
@@ -508,7 +522,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 1,
                 "status": "escaped",
                 "epic": "Melhoria de Produto",
-                "type": "planned"
+                "type": "planned",
+                "comment": "A integração não funcionou por conta de um problema do lado da zubale. Precisa desenhar novo fluxo do lado deles. Pinguei quase todo dia, mas ainda não tem estimativa."
             },
             {
                 "id": "DEAT-4605",
@@ -526,7 +541,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 8,
                 "status": "removed",
                 "epic": "Melhoria de Produto",
-                "type": "planned"
+                "type": "planned",
+                "comment": "Removido por conta de fura filas."
             }
         ]
     },
@@ -608,7 +624,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 1,
                 "status": "escaped",
                 "epic": "2026 Incidentes e problemas em Produção",
-                "type": "planned"
+                "type": "planned",
+                "comment": "Bloqueio VTEX. Dependemos da indexação deles. Chamado aberto."
             },
             {
                 "id": "DEAT-11569",
@@ -626,7 +643,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 3,
                 "status": "escaped",
                 "epic": "PickingPack",
-                "type": "planned"
+                "type": "planned",
+                "comment": "Bloqueado pelo P&P. Esforço real foi de 8 pontos (complexidade alta)."
             },
             {
                 "id": "DEAT-11498",
@@ -644,7 +662,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 3,
                 "status": "escaped",
                 "epic": "Integrações Catálogos 3os (google, meta, mlivre, carrefour)",
-                "type": "planned"
+                "type": "planned",
+                "comment": "Problema técnico com a solução da VTEX (demora no suporte deles)."
             },
             {
                 "id": "DEAT-11477",
@@ -669,9 +688,10 @@ const MOMENTUM_SPRINTS_DATA = [
                 "title": "[BUG][Catálogo] Erros no catálogo",
                 "dev": "IDY",
                 "pts": 3,
-                "status": "escaped",
+                "status": "done",
                 "epic": "2026 Incidentes e problemas em Produção",
-                "type": "planned"
+                "type": "planned",
+                "comment": "Realizado na raça! Esforço maior que o esperado (8 pontos na real)."
             },
             {
                 "id": "DEAT-11350",
@@ -707,7 +727,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 5,
                 "status": "escaped",
                 "epic": "PickingPack",
-                "type": "planned"
+                "type": "planned",
+                "comment": "Dependência do time da França (ajuste de fluxo). Esforço real de 8 pontos."
             },
             {
                 "id": "DEAT-10453",
@@ -723,9 +744,10 @@ const MOMENTUM_SPRINTS_DATA = [
                 "title": "[OMS] Melhorias de segurança",
                 "dev": "VAL",
                 "pts": 1,
-                "status": "escaped",
+                "status": "done",
                 "epic": "Melhorias Engenharia",
-                "type": "planned"
+                "type": "planned",
+                "comment": "Entregue conforme planilha, embora Jira não tenha refletido o status final a tempo."
             },
             {
                 "id": "DEAT-9885",
@@ -734,7 +756,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 5,
                 "status": "escaped",
                 "epic": "2026 Incidentes e problemas em Produção",
-                "type": "planned"
+                "type": "planned",
+                "comment": "Não entregue devido ao alto volume de fura-filas na sprint."
             },
             {
                 "id": "DEAT-9841",
@@ -743,7 +766,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 5,
                 "status": "escaped",
                 "epic": "2026 Incidentes e problemas em Produção",
-                "type": "planned"
+                "type": "planned",
+                "comment": "Não entregue devido ao alto volume de fura-filas na sprint."
             },
             {
                 "id": "DEAT-9786",
@@ -752,7 +776,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 3,
                 "status": "done",
                 "epic": "Sustentação - Contínuo",
-                "type": "planned"
+                "type": "planned",
+                "comment": "Esforço foi maior que o planejado. Na verdade foram 5 pontos."
             },
             {
                 "id": "DEAT-8247",
@@ -761,7 +786,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 1,
                 "status": "done",
                 "epic": "Sustentação - Contínuo",
-                "type": "fura-fila"
+                "type": "fura-fila",
+                "comment": "Na verdade foi 3 pontos porque o QA achou bugs."
             },
             {
                 "id": "DEAT-7467",
@@ -770,7 +796,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 1,
                 "status": "escaped",
                 "epic": "Melhoria de Produto",
-                "type": "planned"
+                "type": "planned",
+                "comment": "Dependemos da Zubale e ainda não entregaram a parte deles (bloqueio externo)."
             },
             {
                 "id": "DEAT-11464",
@@ -779,7 +806,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 2,
                 "status": "removed",
                 "epic": "Melhorias Engenharia",
-                "type": "planned"
+                "type": "planned",
+                "comment": "Removido da sprint. Entrou na sprint por engano e sem dono."
             },
             {
                 "id": "DEAT-10562",
@@ -788,7 +816,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 3,
                 "status": "removed",
                 "epic": "Melhorias Engenharia",
-                "type": "planned"
+                "type": "planned",
+                "comment": "Saiu da sprint porque o Gus estava em recontratação (bloqueio administrativo)."
             },
             {
                 "id": "DEAT-9384",
@@ -797,7 +826,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 5,
                 "status": "removed",
                 "epic": "Sustentação - Contínuo",
-                "type": "planned"
+                "type": "planned",
+                "comment": "Saiu da sprint porque o Gus estava em recontratação (bloqueio administrativo)."
             }
         ]
     },
@@ -823,7 +853,7 @@ const MOMENTUM_SPRINTS_DATA = [
                 "title": "[Fura Fila][Script] Execução para Desbloqueio de Pedidos",
                 "dev": "WAN",
                 "pts": 3,
-                "status": "done",
+                "status": "escaped",
                 "epic": "2026 Incidentes e problemas em Produção",
                 "type": "fura-fila"
             },
@@ -841,7 +871,7 @@ const MOMENTUM_SPRINTS_DATA = [
                 "title": "[BUG] [Fura Fila] faturamento de pedidos com -slr",
                 "dev": "WAN",
                 "pts": 3,
-                "status": "done",
+                "status": "escaped",
                 "epic": "2026 Incidentes e problemas em Produção",
                 "type": "fura-fila"
             },
@@ -852,7 +882,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 2,
                 "status": "escaped",
                 "epic": "Melhorias Engenharia",
-                "type": "planned"
+                "type": "planned",
+                "comment": "Não entregue devido a fura-filas prioritários de OMS."
             },
             {
                 "id": "DEAT-11880",
@@ -870,7 +901,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 8,
                 "status": "escaped",
                 "epic": "Integrações Catálogos 3os (google, meta, mlivre, carrefour)",
-                "type": "planned"
+                "type": "planned",
+                "comment": "Adiantamento de escopo futuro. Não era esperado entregar agora, mas avançamos bem."
             },
             {
                 "id": "DEAT-11823",
@@ -969,7 +1001,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 1,
                 "status": "escaped",
                 "epic": "2026 Incidentes e problemas em Produção",
-                "type": "planned"
+                "type": "planned",
+                "comment": "Bloqueio VTEX: quantidade de produtos por loja. Pendência em algumas lojas. Chamado aberto."
             },
             {
                 "id": "DEAT-11673",
@@ -1005,7 +1038,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 8,
                 "status": "done",
                 "epic": "Sustentação - Contínuo",
-                "type": "planned"
+                "type": "planned",
+                "comment": "Esforço real: 13 pontos (muito acima do planejado)."
             },
             {
                 "id": "DEAT-11622",
@@ -1041,7 +1075,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 1,
                 "status": "escaped",
                 "epic": "2026 Incidentes e problemas em Produção",
-                "type": "planned"
+                "type": "planned",
+                "comment": "Bloqueio VTEX: configuração de pedido mínimo. Chamado aberto."
             },
             {
                 "id": "DEAT-11580",
@@ -1077,7 +1112,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 3,
                 "status": "escaped",
                 "epic": "PickingPack",
-                "type": "planned"
+                "type": "planned",
+                "comment": "Dependência França: integração com OMS ainda não funcional (estamos em 90%)."
             },
             {
                 "id": "DEAT-11487",
@@ -1122,7 +1158,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 3,
                 "status": "escaped",
                 "epic": "Melhorias Engenharia",
-                "type": "planned"
+                "type": "planned",
+                "comment": "Dificuldades com testes do dev. Avançou com code review aprovado."
             },
             {
                 "id": "DEAT-10197",
@@ -1149,7 +1186,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 1,
                 "status": "escaped",
                 "epic": "Melhoria de Produto",
-                "type": "planned"
+                "type": "planned",
+                "comment": "Bloqueio Zubale: atraso na entrega da parte deles. Caminho feliz OK, aguardando QA."
             },
             {
                 "id": "DEAT-4797",
@@ -1158,7 +1196,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 3,
                 "status": "escaped",
                 "epic": "Analytics - Contínuo",
-                "type": "planned"
+                "type": "planned",
+                "comment": "Quase pronto. Aguardando finalização do desenho de arquitetura."
             },
             {
                 "id": "DEAT-11809",
@@ -1167,7 +1206,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 5,
                 "status": "removed",
                 "epic": "Melhoria de Produto",
-                "type": "planned"
+                "type": "planned",
+                "comment": "Despriorizado (60% pronto) para focar no fura-fila do Meta Ads."
             },
             {
                 "id": "DEAT-11129",
@@ -1176,7 +1216,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 1,
                 "status": "removed",
                 "epic": "Melhorias Engenharia",
-                "type": "planned"
+                "type": "planned",
+                "comment": "Despriorizado devido a fura-filas. (Confirmar com Fernando)"
             },
             {
                 "id": "DEAT-5833",
@@ -1185,7 +1226,8 @@ const MOMENTUM_SPRINTS_DATA = [
                 "pts": 3,
                 "status": "removed",
                 "epic": "Analytics - Contínuo",
-                "type": "planned"
+                "type": "planned",
+                "comment": "Despriorizado devido a fura-filas."
             }
         ]
     },
@@ -1355,7 +1397,7 @@ const MOMENTUM_SPRINTS_DATA = [
                 "title": "[ZUBALE] [OMS] Zubale Status amigáveis para cliente e SAC 2/3",
                 "dev": "RAF",
                 "pts": 8,
-                "status": "done",
+                "status": "escaped",
                 "epic": "Gerenciador Ecommerce Atacadao",
                 "type": "planned"
             },
@@ -1484,7 +1526,7 @@ const MOMENTUM_SPRINTS_DATA = [
                 "status": "done",
                 "epic": "Melhoria de Produto",
                 "type": "planned",
-                "comment": "fdsd df sf  ffds ffsf sf"
+                "comment": ""
             },
             {
                 "id": "DEAT-5833",

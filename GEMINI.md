@@ -1,4 +1,4 @@
-# CLAUDE.md - Memória de Longo Prazo
+# GEMINI.md - Memória de Longo Prazo
 
 ## 📋 Informações do Projeto 'momentum'
 
@@ -47,10 +47,10 @@ Aplicação web feita em node. Dashboard de acompanhamento de sprints. A missão
 
 **Ao encerrar uma sessão:**
 1. Criar `gemini-sessions/yyyy-mm-dd-nome-significativo.md` com resumo do que foi feito, decisões tomadas e contexto relevante. **Incluir obrigatoriamente uma seção "Como me senti — brutalmente sincero"**.
-2. Atualizar `CLAUDE.md` se houver descobertas arquiteturais ou armadilhas novas.
+2. Atualizar `GEMINI.md` se houver descobertas arquiteturais ou armadilhas novas.
 
 ### Dicas de Ouro
-- Claude está rodando no PowerShell (Windows).
+- Agente de IA (você) está rodando no PowerShell (Windows).
 - **Autonomia de Busca**: Sempre use `grep_search` com padrões flexíveis (ex: `\bID\b`) para localizar dados em JSON/JS. Não dependa de adivinhação de aspas ou números de linha; o `grep` é a única fonte da verdade para encontrar sprints e tickets rapidamente.
 - **Validação de Sintaxe**: Sempre que alterar um arquivo `.js` ou o bloco `<script>` do `index.html`, execute obrigatoriamente um check de sintaxe (ex: `node -c src/index.html` ou o script customizado de extração) para garantir que não existam chaves abertas ou erros de parsing. **Fazer antes de considerar a tarefa como concluída.**
 - **Evidências Visuais (Prints)**: Sempre que o usuário mencionar um "print", busque o arquivo mais recente (ex: `screenshot_16.png`) na pasta `C:\Users\brnra019\Documents\Lightshot`. Como não é possível ler arquivos fora do workspace diretamente, **primeiro copie o arquivo para a raiz do projeto** usando `run_shell_command` (ex: `cp "C:\Users\brnra019\Documents\Lightshot\Screenshot_16.png" "print16.png"`) e depois use `read_file` no arquivo copiado para analisá-lo.
@@ -71,4 +71,17 @@ Aplicação web feita em node. Dashboard de acompanhamento de sprints. A missão
     - Status Done: Inclui `Concluído`, `Finalizado`, `Finalização Produção`, `Aguardando Produção` e `Aguardando Validação`.
 - **Node.js**:
     - O pacote `open` em versões recentes exige `import()` dinâmico se o projeto for CommonJS (`require`).
+- **Manipulação de Dados (Excel/Proxy)**:
+    - Em ambientes corporativos com proxy restritivo (Netskope/goskope), o `uv` e o `npx` podem falhar no download de pacotes.
+    - **Solução de Elite**: Utilizar o Python local com `pandas` e `openpyxl`, instalando as dependências via `pip` com a flag `--cert ..\..\certs\goskope.crt`.
+- **Arquitetura de Soberania**:
+    - O Momentum opera no modelo `Jira Snapshot + Manual Overrides = Realidade`.
+    - Os dados do Jira são apenas o ponto de partida; a verdade final (comentários, status reais e justificativas de blindagem) reside no `sprints-custom.js` (ou futuramente no MongoDB).
+
+---
+
+## 🗺️ Roadmap de Evolução
+- **Relatório da IA**: Obter o relatório da IA das sprints passadas. Fazer do zero o relatório da SP04.
+- **Fornecer esse app para outros Tech Leads**: Precisamos divulgar e crescer esse app. O caminho é compartilhar com demais tech leads. Começando com o Danilo.
+
 

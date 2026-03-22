@@ -16,7 +16,8 @@ module.exports = {
             "pts": 5,
             "status": "removed",
             "epic": "PickingPack",
-            "type": "planned"
+            "type": "planned",
+            "comment": "dependemos de nova versão dos gringos que ainda não foi entregue."
         },
         {
             "id": "DEAT-11044",
@@ -25,7 +26,8 @@ module.exports = {
             "pts": 3,
             "status": "removed",
             "epic": "2025 Incidentes e problemas em Produção",
-            "type": "planned"
+            "type": "planned",
+            "comment": "não ia dar tempo porque o Val estava de folga. Entrou no meio da sprint."
         },
         {
             "id": "DEAT-11012",
@@ -108,7 +110,38 @@ module.exports = {
             "pts": 8,
             "status": "removed",
             "epic": "Melhoria de Produto",
-            "type": "planned"
+            "type": "planned",
+            "comment": "Removido por conta de fura filas. Depende do card de CMS do IDY."
+        },
+        {
+            "id": "DEAT-7467",
+            "title": "[Backend] Informar Zubale sobre Faturamento",
+            "dev": "RAF",
+            "pts": 1,
+            "status": "escaped",
+            "epic": "Melhoria de Produto",
+            "type": "planned",
+            "comment": "A integração não funcionou por conta de um problema do lado da zubale. Precisa desenhar novo fluxo do lado deles. Pinguei quase todo dia, mas ainda não tem estimativa."
+        },
+        {
+            "id": "DEAT-11085",
+            "title": "[P&P] Atualizar Versão do Picking Pack QA v13",
+            "dev": "VAL",
+            "pts": 5,
+            "status": "escaped",
+            "epic": "PickingPack",
+            "type": "planned",
+            "comment": "Foi bastante complexo. Dependemos da França pra fechar. Perto de fechar. Fizemos tudo de infra do nosso lado."
+        },
+        {
+            "id": "DEAT-9885",
+            "title": "[Backend] [OMS] Duplicidade de Devoluções de ITENS",
+            "dev": "WAN",
+            "pts": 5,
+            "status": "escaped",
+            "epic": "2026 Incidentes e problemas em Produção",
+            "type": "planned",
+            "comment": "não deu tempo. Ajudou na ativação de lojas que deu um pouco mais de trabalho. Além disso Wan só trabalhou uma semana nessa sprint."
         }
     ],
     "SP03": [
@@ -119,7 +152,8 @@ module.exports = {
             "pts": 2,
             "status": "removed",
             "epic": "Melhorias Engenharia",
-            "type": "planned"
+            "type": "planned",
+            "comment": "Removido da sprint. Entrou na sprint por engano e sem dono."
         },
         {
             "id": "DEAT-10562",
@@ -128,7 +162,8 @@ module.exports = {
             "pts": 3,
             "status": "removed",
             "epic": "Melhorias Engenharia",
-            "type": "planned"
+            "type": "planned",
+            "comment": "Saiu da sprint porque o Gus estava em recontratação (bloqueio administrativo)."
         },
         {
             "id": "DEAT-9384",
@@ -137,7 +172,8 @@ module.exports = {
             "pts": 5,
             "status": "removed",
             "epic": "Sustentação - Contínuo",
-            "type": "planned"
+            "type": "planned",
+            "comment": "Saiu da sprint porque o Gus estava em recontratação (bloqueio administrativo)."
         }
     ],
     "SP04": [
@@ -148,7 +184,8 @@ module.exports = {
             "pts": 5,
             "status": "removed",
             "epic": "Melhoria de Produto",
-            "type": "planned"
+            "type": "planned",
+            "comment": "Despriorizado (60% pronto) para focar no fura-fila do Meta Ads."
         },
         {
             "id": "DEAT-11129",
@@ -157,7 +194,8 @@ module.exports = {
             "pts": 1,
             "status": "removed",
             "epic": "Melhorias Engenharia",
-            "type": "planned"
+            "type": "planned",
+            "comment": "Despriorizado devido a fura-filas. (Confirmar com Fernando)"
         },
         {
             "id": "DEAT-5833",
@@ -166,7 +204,8 @@ module.exports = {
             "pts": 3,
             "status": "removed",
             "epic": "Analytics - Contínuo",
-            "type": "planned"
+            "type": "planned",
+            "comment": "Despriorizado devido a fura-filas."
         }
     ],
     "SP05": [
@@ -216,7 +255,7 @@ module.exports = {
             "status": "done",
             "epic": "Melhoria de Produto",
             "type": "planned",
-            "comment": "fdsd df sf  ffds ffsf sf"
+            "comment": ""
         }
     ]
 };
