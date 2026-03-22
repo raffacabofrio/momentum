@@ -115,9 +115,9 @@ async function syncSprint(sprintIdOrObject) {
         // 4. Parse Goal and Swat
         const goalRaw = sprintMetadata.goal || '';
         const goalParts = goalRaw.split('\n');
-        const goal = goalParts[0].replace('Objetivo:', '').trim();
+        const goal = goalParts[0].replace('Objetivo:', '').replace('🎯', '').trim();
         const swatRaw = goalParts.find(p => p.toLowerCase().includes('swat')) || '';
-        const swat = swatRaw.split(':')[1]?.split(',').map(s => s.trim().toUpperCase().substring(0, 3)) || [];
+        const swat = swatRaw.includes(':') ? swatRaw.split(':')[1].split(',').map(s => s.trim().toUpperCase().substring(0, 3)) : [];
 
         const newSprint = {
             id: sprintMetadata.name.includes('|') ? sprintMetadata.name.split('|').pop().trim() : sprintMetadata.name,
@@ -127,34 +127,39 @@ async function syncSprint(sprintIdOrObject) {
             tickets: tickets
         };
 
-        // 5. Merge Removed Tickets (Manual Override)
-        const removedPath = path.join(__dirname, 'sprints-removed.js');
-        if (fs.existsSync(removedPath)) {
+        // 5. Merge Custom Data (Manual Removed Tickets + Comments)
+        const customPath = path.join(__dirname, 'sprints-custom.js');
+        if (fs.existsSync(customPath)) {
             try {
-                delete require.cache[require.resolve(removedPath)]; // Force read latest
-                const removedData = require(removedPath);
-                const removedForSprint = removedData[newSprint.id] || [];
+                delete require.cache[require.resolve(customPath)]; // Force read latest
+                const customData = require(customPath);
+                const customForSprint = customData[newSprint.id] || [];
                 
+                // Injetar comentários nos tickets baixados
+                newSprint.tickets.forEach(t => {
+                    const ct = customForSprint.find(ct => ct.id === t.id);
+                    if (ct && ct.comment) t.comment = ct.comment;
+                });
+
+                // Adicionar tickets que estão no custom mas NÃO vieram do Jira (ex: removidos manuais)
                 const existingIds = new Set(newSprint.tickets.map(t => t.id));
-                for (const rt of removedForSprint) {
-                    if (!existingIds.has(rt.id)) {
-                        newSprint.tickets.push(rt);
+                for (const ct of customForSprint) {
+                    if (!existingIds.has(ct.id)) {
+                        newSprint.tickets.push(ct);
                     }
                 }
             } catch (e) {
-                console.warn(`⚠️ Aviso: Falha ao mesclar sprints-removed.js - ${e.message}`);
+                console.warn(`⚠️ Aviso: Falha ao mesclar sprints-custom.js - ${e.message}`);
             }
         }
 
-        // 6. Update sprints.js
-        const filePath = path.join(__dirname, 'sprints.js');
+        // 6. Update sprints-jira.js
+        const filePath = path.join(__dirname, 'sprints-jira.js');
         let currentData = [];
         if (fs.existsSync(filePath)) {
             const content = fs.readFileSync(filePath, 'utf8');
-            const jsonMatch = content.match(/\[[\s\S]*\]/);
-            if (jsonMatch) {
-                try { currentData = eval(jsonMatch[0]); } catch(e) { currentData = []; }
-            }
+            const jsonStr = content.replace('const MOMENTUM_SPRINTS_DATA = ', '').replace(';', '');
+            try { currentData = JSON.parse(jsonStr); } catch(e) { currentData = []; }
         }
 
         currentData = currentData.filter(s => s.id !== newSprint.id);
