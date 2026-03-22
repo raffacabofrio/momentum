@@ -438,9 +438,23 @@ function renderCharts() {
     const isDark = body.classList.contains('dark-mode');
     const gridColor = isDark ? '#334155' : '#e2e8f0';
     const textColor = isDark ? '#94a3b8' : '#64748b';
+    const selectedDev = document.getElementById('filter-dev')?.value || 'TODOS';
+    
     const sprintLabels = MOMENTUM_SPRINTS_DATA.map(s => s.id);
-    const delivered = MOMENTUM_SPRINTS_DATA.map(s => s.tickets.filter(t => t.status === 'done').reduce((acc, t) => acc + (Number(t.pts) || 0), 0));
-    const committed = MOMENTUM_SPRINTS_DATA.map(s => s.tickets.reduce((acc, t) => acc + (Number(t.pts) || 0), 0));
+    
+    // Filtrar dados para o gráfico de barras (Planejado vs Entregue)
+    const delivered = MOMENTUM_SPRINTS_DATA.map(s => {
+        let tks = s.tickets;
+        if (selectedDev !== 'TODOS') tks = tks.filter(t => t.dev === selectedDev);
+        return tks.filter(t => t.status === 'done').reduce((acc, t) => acc + (Number(t.pts) || 0), 0);
+    });
+    
+    const committed = MOMENTUM_SPRINTS_DATA.map(s => {
+        let tks = s.tickets;
+        if (selectedDev !== 'TODOS') tks = tks.filter(t => t.dev === selectedDev);
+        return tks.filter(t => t.status !== 'removed').reduce((acc, t) => acc + (Number(t.pts) || 0), 0);
+    });
+
     const avg = delivered.length > 0 ? delivered.reduce((a, b) => a + b, 0) / delivered.length : 0;
 
     const ctxPlanning = document.getElementById('planningChart')?.getContext('2d');
