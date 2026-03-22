@@ -237,7 +237,13 @@
     <div class="table-container">
         <div class="section-header"><h2>Desempenho por Dev</h2><p>Visão de entregas individuais.</p></div>
         <table>
-            <thead><tr><th>Dev</th><th>Planejados</th><th>Fura Filas</th><th>Total Pontos</th></tr></thead>
+            <thead><tr>
+                <th style="cursor:pointer" onclick="setSort('devId')">Dev</th>
+                <th style="cursor:pointer" onclick="setSort('pD')">Planejados</th>
+                <th style="cursor:pointer" onclick="setSort('fD')">Fura Filas</th>
+                <th style="cursor:pointer" onclick="setSort('totalPts')">Total Pontos</th>
+                <th style="cursor:pointer" onclick="setSort('avgPts')">Média Pontos</th>
+            </tr></thead>
             <tbody id="dev-table-body"></tbody>
         </table>
     </div>
@@ -254,12 +260,12 @@
 
     <script>
         const DEV_COLORS = {
-            'VAL': '#166534', // Verde
-            'WAN': '#facc15', // Amarelo
-            'IDY': '#3b82f6', // Azul
-            'CHA': '#ffffff', // Branco
-            'GUS': '#000000', // Preto
-            'RAF': '#8b5cf6'  // Violeta
+            'VAL': '#166534',
+            'WAN': '#facc15',
+            'IDY': '#3b82f6',
+            'CHA': '#ffffff',
+            'GUS': '#000000',
+            'RAF': '#8b5cf6'
         };
 
         function getUniqueDevs() {
@@ -271,6 +277,19 @@
             return Array.from(devs).sort();
         }
 
+        let currentSort = { col: 'totalPts', dir: 'desc' };
+
+        function setSort(col) {
+            if (currentSort.col === col) {
+                currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.col = col;
+                currentSort.dir = 'desc';
+            }
+            loadData();
+            renderCharts();
+        }
+
         function loadData() {
             const selectedSprintId = document.getElementById('filter-sprint').value;
             const selectedDev = document.getElementById('filter-dev').value;
@@ -280,12 +299,10 @@
             let tickets = sprint.tickets;
             if (selectedDev !== 'TODOS') tickets = tickets.filter(t => t.dev === selectedDev);
 
-            // Update Info
             document.getElementById('sprint-goal-text').innerText = sprint.goal;
             document.getElementById('sprint-period-text').innerText = `Período: ${sprint.period}`;
             document.getElementById('sprint-swat-list').innerHTML = sprint.swat.map(d => `<span class="task-dev">${d}</span>`).join('');
 
-            // Helper to calc totals
             const calc = (list) => {
                 const delivered = list.filter(t => t.status === 'done').reduce((a, t) => a + (Number(t.pts) || 0), 0);
                 const escaped = list.filter(t => t.status === 'escaped').reduce((a, t) => a + (Number(t.pts) || 0), 0);
@@ -322,57 +339,52 @@
             updateKPI('furafilas', curr.fura, trends.fura, true);
             updateKPI('performance', curr.perf, trends.perf);
 
-            // Table
-            const devPerformance = getUniqueDevs().map(devId => {
+            let devPerformance = getUniqueDevs().map(devId => {
                 const dTicks = sprint.tickets.filter(t => t.dev === devId);
                 const pD = dTicks.filter(t => t.type === 'planned' && t.status === 'done').length;
                 const pT = dTicks.filter(t => t.type === 'planned').length;
                 const fD = dTicks.filter(t => t.type === 'fura-fila' && t.status === 'done').length;
                 const fT = dTicks.filter(t => t.type === 'fura-fila').length;
                 const totalPts = dTicks.filter(t => t.status === 'done').reduce((a, t) => a + (Number(t.pts) || 0), 0);
-                return { devId, pD, pT, fD, fT, totalPts, count: dTicks.length };
-            }).filter(d => d.count > 0 && (selectedDev === 'TODOS' || d.devId === selectedDev))
-              .sort((a, b) => b.totalPts - a.totalPts);
+                const historicalPts = MOMENTUM_SPRINTS_DATA.map(s => 
+                    s.tickets.filter(t => t.dev === devId && t.status === 'done').reduce((acc, t) => acc + (Number(t.pts) || 0), 0)
+                );
+                const avgPts = Number((historicalPts.reduce((a, b) => a + b, 0) / historicalPts.length).toFixed(1));
+                return { devId, pD, pT, fD, fT, totalPts, avgPts, count: dTicks.length };
+            }).filter(d => d.count > 0 && (selectedDev === 'TODOS' || d.devId === selectedDev));
+
+            devPerformance.sort((a, b) => {
+                let vA = a[currentSort.col], vB = b[currentSort.col];
+                return currentSort.dir === 'asc' ? (vA > vB ? 1 : -1) : (vB > vA ? 1 : -1);
+            });
 
             const maxPts = Math.max(...devPerformance.map(d => d.totalPts));
-
             document.getElementById('dev-table-body').innerHTML = devPerformance.map(d => {
                 const bc = d.totalPts > 13 ? 'points-dark-green' : d.totalPts >= 10 ? 'points-light-green' : d.totalPts >= 6 ? 'points-orange' : 'points-red';
                 const trophy = (d.totalPts === maxPts && maxPts > 0) ? ' 🏆' : '';
-                return `<tr><td>${d.devId}${trophy}</td><td>${d.pD} / ${d.pT}</td><td>${d.fD} / ${d.fT}</td><td><span class="badge ${bc}">${d.totalPts}</span></td></tr>`;
+                return `<tr>
+                    <td>${d.devId}${trophy}</td>
+                    <td>${d.pD} / ${d.pT}</td>
+                    <td>${d.fD} / ${d.fT}</td>
+                    <td><span class="badge ${bc}">${d.totalPts}</span></td>
+                    <td><span style="font-size: 0.85rem; opacity: 0.8;">${d.avgPts}</span></td>
+                </tr>`;
             }).join('');
 
-            // Epics
             const epicMap = {};
             tickets.forEach(t => {
                 if (!epicMap[t.epic]) epicMap[t.epic] = { title: t.epic, done: 0, total: 0, pDone: 0, pTotal: 0, fDone: 0, fTotal: 0, tasks: { e: [], s: [] } };
-                
-                // Story points for the pizza chart
                 epicMap[t.epic].total += (Number(t.pts) || 0);
                 if (t.status === 'done') epicMap[t.epic].done += (Number(t.pts) || 0);
-
-                // Card counting for the summary text
-                if (t.type === 'planned') {
-                    epicMap[t.epic].pTotal++;
-                    if (t.status === 'done') epicMap[t.epic].pDone++;
-                } else {
-                    epicMap[t.epic].fTotal++;
-                    if (t.status === 'done') epicMap[t.epic].fDone++;
-                }
-
-                if (t.status === 'done') {
-                    epicMap[t.epic].tasks.e.push(t);
-                } else {
-                    epicMap[t.epic].tasks.s.push(t);
-                }
+                if (t.type === 'planned') { epicMap[t.epic].pTotal++; if (t.status === 'done') epicMap[t.epic].pDone++; }
+                else { epicMap[t.epic].fTotal++; if (t.status === 'done') epicMap[t.epic].fDone++; }
+                if (t.status === 'done') epicMap[t.epic].tasks.e.push(t); else epicMap[t.epic].tasks.s.push(t);
             });
 
             const epics = Object.values(epicMap).sort((a, b) => (b.pTotal + b.fTotal) - (a.pTotal + a.fTotal));
             document.getElementById('epic-list-container').innerHTML = epics.map((e, i) => {
-                // Ordenar tarefas por Dev
                 e.tasks.e.sort((a, b) => a.dev.localeCompare(b.dev));
                 e.tasks.s.sort((a, b) => a.dev.localeCompare(b.dev));
-
                 const renderTasks = (taskList) => {
                     let lastDev = '';
                     return taskList.map(t => {
@@ -382,7 +394,6 @@
                         return `<li style="${borderStyle}"><span class="status-dot dot-${t.status}"></span> <span class="task-dev">${t.dev}</span> <a href="https://c4br.atlassian.net/browse/${t.id}" target="_blank" class="task-link" title="${t.id}">${t.title}</a> <span class="task-pts">${t.pts}.0 pts</span></li>`;
                     }).join('');
                 };
-
                 return `
                 <details class="epic-item">
                     <summary>
@@ -402,9 +413,10 @@
         function initFilters() {
             const sprintFilter = document.getElementById('filter-sprint');
             sprintFilter.innerHTML = MOMENTUM_SPRINTS_DATA.map(s => `<option value="${s.id}">${s.id}</option>`).reverse().join('');
-            document.getElementById('filter-dev').innerHTML = `<option>TODOS</option>` + getUniqueDevs().map(d => `<option>${d}</option>`).join('');
+            const devFilter = document.getElementById('filter-dev');
+            devFilter.innerHTML = `<option>TODOS</option>` + getUniqueDevs().map(d => `<option>${d}</option>`).join('');
             sprintFilter.addEventListener('change', () => { loadData(); renderCharts(); });
-            document.getElementById('filter-dev').addEventListener('change', () => { loadData(); renderCharts(); });
+            devFilter.addEventListener('change', () => { loadData(); renderCharts(); });
         }
 
         const themeToggle = document.getElementById('themeToggle');
@@ -415,7 +427,7 @@
         themeToggle.addEventListener('click', () => {
             body.classList.toggle('dark-mode');
             localStorage.setItem('theme', body.classList.contains('dark-mode') ? 'dark' : 'light');
-            updateLogo(); updateCharts();
+            updateLogo(); renderCharts();
         });
 
         const ctxPlanning = document.getElementById('planningChart').getContext('2d');
@@ -451,41 +463,15 @@
                 data: {
                     labels: sprintLabels,
                     datasets: [
-                        { 
-                            label: 'Entregue', 
-                            data: delivered, 
-                            backgroundColor: '#166534', 
-                            borderRadius: 4, 
-                            order: 1, 
-                            barPercentage: 0.5, 
-                            categoryPercentage: 0.8 
-                        },
-                        { 
-                            label: 'Comprometido', 
-                            data: committed, 
-                            backgroundColor: isDark ? 'rgba(51, 65, 85, 0.5)' : 'rgba(203, 213, 225, 0.5)', 
-                            borderRadius: 4, 
-                            order: 2, 
-                            barPercentage: 0.5, 
-                            categoryPercentage: 0.8 
-                        }
+                        { label: 'Entregue', data: delivered, backgroundColor: '#166534', borderRadius: 4, order: 1, barPercentage: 0.5, categoryPercentage: 0.8 },
+                        { label: 'Comprometido', data: committed, backgroundColor: isDark ? 'rgba(51, 65, 85, 0.5)' : 'rgba(203, 213, 225, 0.5)', borderRadius: 4, order: 2, barPercentage: 0.5, categoryPercentage: 0.8 }
                     ]
                 },
                 options: {
                     responsive: true,
                     scales: {
-                        x: { 
-                            stacked: true, // Forçar sobreposição quando grouped é false
-                            grid: { display: false }, 
-                            ticks: { color: textColor } 
-                        },
-                        y: { 
-                            beginAtZero: true, 
-                            stacked: false, 
-                            grid: { color: gridColor }, 
-                            ticks: { color: textColor }, 
-                            title: { display: true, text: 'Points', color: textColor } 
-                        }
+                        x: { stacked: true, grid: { display: false }, ticks: { color: textColor } },
+                        y: { beginAtZero: true, stacked: false, grid: { color: gridColor }, ticks: { color: textColor }, title: { display: true, text: 'Points', color: textColor } }
                     },
                     plugins: { legend: { position: 'top', labels: { color: textColor } } }
                 }
@@ -508,9 +494,6 @@
                 },
                 options: {
                     responsive: true,
-                    onClick: (e, elements, chart) => {
-                        if (elements.length > 0) return; // Ignore clicks on points
-                    },
                     plugins: { 
                         legend: { 
                             position: 'top', 
@@ -518,30 +501,13 @@
                             onClick: (e, legendItem, legend) => {
                                 const index = legendItem.datasetIndex;
                                 const ci = legend.chart;
-                                
-                                // Triple Toggle State logic
                                 if (!ci._toggleStates) ci._toggleStates = {};
                                 if (ci._toggleStates[index] === undefined) ci._toggleStates[index] = 0;
-                                
                                 ci._toggleStates[index] = (ci._toggleStates[index] + 1) % 3;
                                 const state = ci._toggleStates[index];
-
-                                if (state === 1) {
-                                    // State 1: FOCUS (Show only self)
-                                    ci.data.datasets.forEach((ds, i) => {
-                                        ds.hidden = (i !== index);
-                                    });
-                                } else if (state === 2) {
-                                    // State 2: INVERT (Show all BUT self)
-                                    ci.data.datasets.forEach((ds, i) => {
-                                        ds.hidden = (i === index);
-                                    });
-                                } else {
-                                    // State 0: SHOW ALL
-                                    ci.data.datasets.forEach((ds) => ds.hidden = false);
-                                    // Reset other states
-                                    ci._toggleStates = {};
-                                }
+                                if (state === 1) ci.data.datasets.forEach((ds, i) => ds.hidden = (i !== index));
+                                else if (state === 2) ci.data.datasets.forEach((ds, i) => ds.hidden = (i === index));
+                                else { ci.data.datasets.forEach((ds) => ds.hidden = false); ci._toggleStates = {}; }
                                 ci.update();
                             }
                         } 
