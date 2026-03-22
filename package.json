@@ -2,9 +2,9 @@
   "name": "momentum",
   "version": "1.0.0",
   "description": "Análise inteligente de sprints.",
-  "main": "sprints.js",
+  "main": "src/sprints.js",
   "scripts": {
-    "dashboard": "open-cli http://localhost:3000 & nodemon server.js",
+    "dashboard": "open-cli http://localhost:3000 & nodemon src/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
