@@ -102,6 +102,28 @@ app.post('/api/ticket/comment', async (req, res) => {
     }
 });
 
+// Endpoint: Check de Relatório (Habilita/Desabilita Botão)
+app.get('/api/reports/check/:sprintId', (req, res) => {
+    const { sprintId } = req.params;
+    const reportPath = path.join(__dirname, 'reports', `RELATORIO-${sprintId}.pdf`);
+    const exists = fs.existsSync(reportPath);
+    console.log(`🔍 Check de Relatório: ${sprintId} -> ${exists ? 'Encontrado' : 'Ausente'}`);
+    res.json({ exists });
+});
+
+// Endpoint: Download/Visualização do Relatório
+app.get('/api/reports/:sprintId', (req, res) => {
+    const { sprintId } = req.params;
+    const reportPath = path.join(__dirname, 'reports', `RELATORIO-${sprintId}.pdf`);
+    
+    if (fs.existsSync(reportPath)) {
+        res.setHeader('Content-Type', 'application/pdf');
+        res.sendFile(reportPath);
+    } else {
+        res.status(404).send('Relatório não encontrado.');
+    }
+});
+
 app.listen(PORT, async () => {
     console.log(`\n✅ Momentum Dashboard rodando em: http://localhost:${PORT}`);
     console.log(`🚀 Servidor pronto e aguardando...`);

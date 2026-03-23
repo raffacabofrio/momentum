@@ -45,7 +45,7 @@ async function syncSprint(sprintIdOrObject) {
         // 1. Get Tickets (POST /search/jql)
         const auth = Buffer.from(`${JIRA_USER}:${JIRA_TOKEN}`).toString('base64');
         const postData = JSON.stringify({
-            jql: `sprint=${sprintMetadata.id} AND issuetype != Sub-task`,
+            jql: `sprint=${sprintMetadata.id} AND issuetype NOT IN subtaskIssueTypes()`,
             maxResults: 100,
             fields: ["summary", "assignee", "status", "customfield_10030", "customfield_10014", "customfield_10020"]
         });
