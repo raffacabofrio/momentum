@@ -7,6 +7,21 @@ print*.png
 colinha.txt
 AGENTS.md
 .codex/
+.gemini/
+GEMINI.md
+gemini-sessions/
+claude-sessions/
+print*.jpg
+temp_check.js
+sprints.xlsx
+SPRINTS.xlsx
+**/RELATORIO*.pdf
+**/sprint.js
+**/sprints.js
+**/sprints-custom.js
+**/sprints-removed.js
+**/sprints-*.js
+codex-scripts/update_jira_comments.js
 
 # Local sprint data and client artifacts
 src/sprint-data-*/sprints-jira.js
