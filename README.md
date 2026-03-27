@@ -126,7 +126,7 @@ Quando o Jira não trouxer tudo que escapou, use `sprints-custom.js` para reintr
 
 Playbook completo:
 
-- [`codex-skills/new-tech-lead-onboarding.md`](/C:/REPOS/momentum/codex-skills/new-tech-lead-onboarding.md)
+- mantido como documentação operacional interna do guardião em `.codex/`
 
 ## Comandos úteis
 

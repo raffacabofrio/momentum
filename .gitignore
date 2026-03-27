@@ -5,3 +5,10 @@ dist
 *.log
 print*.png
 colinha.txt
+AGENTS.md
+.codex/
+
+# Local sprint data and client artifacts
+src/sprint-data-*/sprints-jira.js
+src/sprint-data-*/sprints-custom.js
+src/sprint-data-*/reports/**
