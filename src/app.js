@@ -4,12 +4,97 @@ function safeRun(label, fn) {
 
 const DEV_COLORS = {
     'VAL': '#166534',
-    'WAN': '#facc15',
-    'IDY': '#3b82f6',
-    'CHA': '#ffffff',
-    'GUS': '#000000',
-    'RAF': '#8b5cf6'
+    'WAN': '#d97706',
+    'IDY': '#2563eb',
+    'CHA': '#db2777',
+    'GUS': '#0f766e',
+    'RAF': '#7c3aed'
 };
+
+function hashString(value) {
+    let hash = 0;
+    for (let index = 0; index < value.length; index += 1) {
+        hash = ((hash << 5) - hash) + value.charCodeAt(index);
+        hash |= 0;
+    }
+    return Math.abs(hash);
+}
+
+function getDevColor(devId) {
+    if (DEV_COLORS[devId]) {
+        return DEV_COLORS[devId];
+    }
+
+    const hash = hashString(devId || 'UNASSIGNED');
+    const hue = hash % 360;
+    const saturation = 62 + (hash % 12);
+    const lightness = 52 + (hash % 10);
+    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+}
+
+function hasSprintData() {
+    return Array.isArray(MOMENTUM_SPRINTS_DATA) && MOMENTUM_SPRINTS_DATA.length > 0;
+}
+
+function getCurrentSprint(selectedSprintId) {
+    if (!hasSprintData()) return null;
+    return MOMENTUM_SPRINTS_DATA.find(s => s.id === selectedSprintId) || MOMENTUM_SPRINTS_DATA[MOMENTUM_SPRINTS_DATA.length - 1];
+}
+
+function parsePtBrDate(value) {
+    if (!value) return null;
+    const [day, month, year] = value.split('/').map(Number);
+    if (!day || !month || !year) return null;
+    return new Date(year, month - 1, day);
+}
+
+function isSprintWip(sprint) {
+    if (!sprint?.period) return false;
+    const [, endDateRaw] = sprint.period.split(' - ');
+    const endDate = parsePtBrDate(endDateRaw);
+    if (!endDate) return false;
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return endDate > today;
+}
+
+function getPendingColumnLabel(sprint) {
+    return isSprintWip(sprint) ? 'Em andamento' : 'Escaparam / Removidos';
+}
+
+function getTaskStatusClass(ticket, sprint) {
+    if (ticket.status === 'done') return 'dot-done';
+    if (ticket.status === 'removed') return 'dot-removed';
+    return isSprintWip(sprint) ? 'dot-wip' : 'dot-escaped';
+}
+
+function renderEmptyState() {
+    const sprintGoal = document.getElementById('sprint-goal-text');
+    const sprintPeriod = document.getElementById('sprint-period-text');
+    const sprintSwat = document.getElementById('sprint-swat-list');
+    const sprintStar = document.getElementById('sprint-star-list');
+    const epicContainer = document.getElementById('epic-list-container');
+    const tableBody = document.getElementById('dev-table-body');
+
+    if (sprintGoal) sprintGoal.innerText = 'Nenhuma sprint carregada ainda.';
+    if (sprintPeriod) sprintPeriod.innerText = 'Faça um Sync Jira para buscar os dados do board ativo.';
+    if (sprintSwat) sprintSwat.innerHTML = '';
+    if (sprintStar) sprintStar.innerHTML = '';
+    if (epicContainer) epicContainer.innerHTML = '<div class="empty-state">Sem épicos para exibir.</div>';
+    if (tableBody) tableBody.innerHTML = '<tr><td colspan="5">Sem dados de sprint para este board.</td></tr>';
+
+    ['performance', 'planejados', 'furafilas', 'removidos'].forEach(id => {
+        const valueEl = document.getElementById(`kpi-${id}-val`);
+        const trendEl = document.getElementById(`kpi-${id}-trend`);
+        if (valueEl) valueEl.innerText = id === 'performance' ? '0%' : '0';
+        if (trendEl) {
+            trendEl.innerText = '+0%';
+            trendEl.className = 'trend';
+            trendEl.style.backgroundColor = '#94a3b8';
+        }
+    });
+}
 
 function getUniqueDevs() {
     const devs = new Set();
@@ -50,10 +135,14 @@ function loadData() {
     const sprintFilter = document.getElementById('filter-sprint');
     const devFilter = document.getElementById('filter-dev');
     if (!sprintFilter || !devFilter) return;
+    if (!hasSprintData()) {
+        renderEmptyState();
+        return;
+    }
 
     const selectedSprintId = sprintFilter.value;
     const selectedDev = devFilter.value;
-    const sprint = MOMENTUM_SPRINTS_DATA.find(s => s.id === selectedSprintId) || MOMENTUM_SPRINTS_DATA[MOMENTUM_SPRINTS_DATA.length - 1];
+    const sprint = getCurrentSprint(selectedSprintId);
     const prevSprint = MOMENTUM_SPRINTS_DATA[MOMENTUM_SPRINTS_DATA.indexOf(sprint) - 1];
     
     let tickets = sprint.tickets;
@@ -211,7 +300,7 @@ function loadData() {
                     const commentHtml = t.comment ? `<span class="task-comment" id="task-comment-${t.id}">${t.comment}</span>` : `<span class="task-comment" id="task-comment-${t.id}"></span>`;
                     const commentClass = t.comment ? 'has-comment' : '';
                     return `<li id="task-li-${t.id}" style="${borderStyle}" draggable="true" ondragstart="handleDragStart(event, '${t.id}')">
-                        <span class="status-dot dot-${t.status}"></span> 
+                        <span class="status-dot ${getTaskStatusClass(t, sprint)}"></span> 
                         <span class="task-dev">${t.dev}</span> 
                         <a href="https://c4br.atlassian.net/browse/${t.id}" target="_blank" class="task-link" title="${t.id}">${t.title}</a> 
                         <span class="task-pts">${t.pts}.0 pts</span>
@@ -233,7 +322,7 @@ function loadData() {
                         <ul class="epic-tasks">${renderTasks(e.tasks.e, 'done')}</ul>
                     </div>
                     <div class="epic-column" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'escaped')">
-                        <div class="epic-col-title">Escaparam / Removidos</div>
+                        <div class="epic-col-title ${isSprintWip(sprint) ? 'epic-col-title-wip' : ''}">${getPendingColumnLabel(sprint)}</div>
                         <ul class="epic-tasks">${renderTasks(e.tasks.s, 'escaped')}</ul>
                     </div>
                 </div>
@@ -272,7 +361,8 @@ function handleDrop(e, newStatus) {
     if (!li) return;
 
     const selectedSprintId = document.getElementById('filter-sprint').value;
-    const sprint = MOMENTUM_SPRINTS_DATA.find(s => s.id === selectedSprintId) || MOMENTUM_SPRINTS_DATA[MOMENTUM_SPRINTS_DATA.length - 1];
+    const sprint = getCurrentSprint(selectedSprintId);
+    if (!sprint) return;
     const ticket = sprint.tickets.find(t => t.id === ticketId);
     
     if (ticket) {
@@ -314,9 +404,9 @@ function handleDrop(e, newStatus) {
             });
         });
 
-        const dot = li.querySelector('.status-dot');
-        dot.className = `status-dot dot-${newStatus}`;
         ticket.status = newStatus;
+        const dot = li.querySelector('.status-dot');
+        if (dot) dot.className = `status-dot ${getTaskStatusClass(ticket, sprint)}`;
         safeRun('Update Stats (Drop)', updateStatsOnly);
         fetch('/api/ticket/update', {
             method: 'POST',
@@ -329,7 +419,8 @@ function handleDrop(e, newStatus) {
 function updateStatsOnly() {
     const selectedSprintId = document.getElementById('filter-sprint').value;
     const selectedDev = document.getElementById('filter-dev').value;
-    const sprint = MOMENTUM_SPRINTS_DATA.find(s => s.id === selectedSprintId) || MOMENTUM_SPRINTS_DATA[MOMENTUM_SPRINTS_DATA.length - 1];
+    const sprint = getCurrentSprint(selectedSprintId);
+    if (!sprint) return;
     
     let tickets = sprint.tickets;
     if (selectedDev !== 'TODOS') tickets = tickets.filter(t => t.dev === selectedDev);
@@ -368,7 +459,8 @@ let currentEditingTicket = null;
 
 function editComment(ticketId) {
     const selectedSprintId = document.getElementById('filter-sprint').value;
-    const sprint = MOMENTUM_SPRINTS_DATA.find(s => s.id === selectedSprintId) || MOMENTUM_SPRINTS_DATA[MOMENTUM_SPRINTS_DATA.length - 1];
+    const sprint = getCurrentSprint(selectedSprintId);
+    if (!sprint) return;
     const ticket = sprint.tickets.find(t => t.id === ticketId);
     
     currentEditingTicket = { ticket, sprintId: selectedSprintId };
@@ -424,6 +516,11 @@ function initFilters() {
     const sprintFilter = document.getElementById('filter-sprint');
     const devFilter = document.getElementById('filter-dev');
     if (!sprintFilter || !devFilter) return;
+    if (!hasSprintData()) {
+        sprintFilter.innerHTML = '<option>Sem dados</option>';
+        devFilter.innerHTML = '<option>TODOS</option>';
+        return;
+    }
 
     sprintFilter.innerHTML = MOMENTUM_SPRINTS_DATA.map(s => `<option value="${s.id}">${s.id}</option>`).reverse().join('');
     devFilter.innerHTML = `<option>TODOS</option>` + getUniqueDevs().map(d => `<option>${d}</option>`).join('');
@@ -434,6 +531,14 @@ function initFilters() {
 let planningChart, devLineChart;
 
 function renderCharts() {
+    if (!hasSprintData()) {
+        if (planningChart) planningChart.destroy();
+        if (devLineChart) devLineChart.destroy();
+        planningChart = null;
+        devLineChart = null;
+        return;
+    }
+
     const body = document.body;
     const isDark = body.classList.contains('dark-mode');
     const gridColor = isDark ? '#334155' : '#e2e8f0';
@@ -504,7 +609,7 @@ function renderCharts() {
             return { 
                 label: devId, 
                 data: MOMENTUM_SPRINTS_DATA.map(s => s.tickets.filter(t => t.dev === devId && t.status === 'done').reduce((acc, t) => acc + (Number(t.pts) || 0), 0)), 
-                borderColor: DEV_COLORS[devId] || '#94a3b8', 
+                borderColor: getDevColor(devId), 
                 tension: 0.3, 
                 borderWidth: 3 
             };

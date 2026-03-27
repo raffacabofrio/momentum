@@ -2,10 +2,21 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const fs = require('fs');
 const https = require('https');
+const { getCustomSprintsFile, getJiraSprintsFile } = require('./board-config');
 
 const JIRA_HOST = 'c4br.atlassian.net';
 const JIRA_USER = process.env.JIRA_USER;
 const JIRA_TOKEN = process.env.JIRA_API_KEY;
+const CUSTOM_SPRINTS_FILE = getCustomSprintsFile(__dirname);
+const JIRA_SPRINTS_FILE = getJiraSprintsFile(__dirname);
+
+function parseSprintDataScript(content) {
+    return JSON.parse(
+        content
+            .replace(/^const MOMENTUM_SPRINTS_DATA = /, '')
+            .replace(/;\s*$/, '')
+    );
+}
 
 async function fetchJira(apiUrl) {
     if (!JIRA_USER || !JIRA_TOKEN) throw new Error('Credenciais JIRA não carregadas. Verifique o .env');
@@ -128,17 +139,18 @@ async function syncSprint(sprintIdOrObject) {
         };
 
         // 5. Merge Custom Data (Manual Removed Tickets + Comments)
-        const customPath = path.join(__dirname, 'sprints-custom.js');
-        if (fs.existsSync(customPath)) {
+        if (fs.existsSync(CUSTOM_SPRINTS_FILE)) {
             try {
-                delete require.cache[require.resolve(customPath)]; // Force read latest
-                const customData = require(customPath);
+                delete require.cache[require.resolve(CUSTOM_SPRINTS_FILE)]; // Force read latest
+                const customData = require(CUSTOM_SPRINTS_FILE);
                 const customForSprint = customData[newSprint.id] || [];
                 
-                // Injetar comentários nos tickets baixados
+                // Aplicar overrides manuais nos tickets que vieram do Jira
                 newSprint.tickets.forEach(t => {
                     const ct = customForSprint.find(ct => ct.id === t.id);
-                    if (ct && ct.comment) t.comment = ct.comment;
+                    if (!ct) return;
+                    if (ct.status) t.status = ct.status;
+                    if (ct.comment) t.comment = ct.comment;
                 });
 
                 // Adicionar tickets que estão no custom mas NÃO vieram do Jira (ex: removidos manuais)
@@ -154,19 +166,17 @@ async function syncSprint(sprintIdOrObject) {
         }
 
         // 6. Update sprints-jira.js
-        const filePath = path.join(__dirname, 'sprints-jira.js');
         let currentData = [];
-        if (fs.existsSync(filePath)) {
-            const content = fs.readFileSync(filePath, 'utf8');
-            const jsonStr = content.replace('const MOMENTUM_SPRINTS_DATA = ', '').replace(';', '');
-            try { currentData = JSON.parse(jsonStr); } catch(e) { currentData = []; }
+        if (fs.existsSync(JIRA_SPRINTS_FILE)) {
+            const content = fs.readFileSync(JIRA_SPRINTS_FILE, 'utf8');
+            try { currentData = parseSprintDataScript(content); } catch(e) { currentData = []; }
         }
 
         currentData = currentData.filter(s => s.id !== newSprint.id);
         currentData.push(newSprint);
         currentData.sort((a, b) => a.id.localeCompare(b.id));
 
-        fs.writeFileSync(filePath, `const MOMENTUM_SPRINTS_DATA = ${JSON.stringify(currentData, null, 4)};`);
+        fs.writeFileSync(JIRA_SPRINTS_FILE, `const MOMENTUM_SPRINTS_DATA = ${JSON.stringify(currentData, null, 4)};`);
         console.log(`✅ Sprint ${newSprint.id} sincronizada!`);
         return newSprint;
 

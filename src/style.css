@@ -157,6 +157,8 @@ body.dark-mode .epic-content { background-color: rgba(255,255,255,0.01); }
     letter-spacing: 0.05em;
 }
 
+.epic-col-title-wip { color: #facc15; }
+
 .epic-tasks { margin: 0; padding: 0; list-style: none; font-size: 0.9rem; min-height: 50px; }
 .epic-tasks li { 
     margin-bottom: 8px; display: flex; align-items: flex-start; gap: 8px; 
@@ -194,6 +196,7 @@ body.dark-mode .task-dev { background: rgba(255,255,255,0.1); }
 .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .dot-done { background-color: #166534; }
 .dot-escaped { background-color: #ef4444; }
+.dot-wip { background-color: #facc15; }
 .dot-removed { background-color: #94a3b8; }
 
 .epic-details { flex: 1; }
