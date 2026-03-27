@@ -2,9 +2,9 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const fs = require('fs');
 const https = require('https');
-const { getCustomSprintsFile, getJiraSprintsFile } = require('./board-config');
+const { getCustomSprintsFile, getJiraHost, getJiraSprintsFile } = require('./board-config');
 
-const JIRA_HOST = 'c4br.atlassian.net';
+const JIRA_HOST = getJiraHost();
 const JIRA_USER = process.env.JIRA_USER;
 const JIRA_TOKEN = process.env.JIRA_API_KEY;
 const CUSTOM_SPRINTS_FILE = getCustomSprintsFile(__dirname);

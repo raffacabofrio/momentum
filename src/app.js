@@ -2,6 +2,14 @@ function safeRun(label, fn) {
     try { fn(); } catch (e) { console.error(`❌ Erro em [${label}]:`, e); }
 }
 
+const APP_CONTEXT = typeof MOMENTUM_CONTEXT === 'object' && MOMENTUM_CONTEXT !== null
+    ? MOMENTUM_CONTEXT
+    : { mode: 'live', syncEnabled: true, banner: '' };
+const JIRA_BROWSE_BASE_URL = typeof APP_CONTEXT.jiraBrowseBaseUrl === 'string'
+    ? APP_CONTEXT.jiraBrowseBaseUrl.replace(/\/+$/, '')
+    : '';
+const MANUAL_EDITING_ENABLED = APP_CONTEXT.manualEditingEnabled !== false;
+
 const DEV_COLORS = {
     'VAL': '#166534',
     'WAN': '#d97706',
@@ -69,6 +77,19 @@ function getTaskStatusClass(ticket, sprint) {
     return isSprintWip(sprint) ? 'dot-wip' : 'dot-escaped';
 }
 
+function isReadOnlyMode() {
+    return !MANUAL_EDITING_ENABLED;
+}
+
+function renderTicketLink(ticket) {
+    const safeTitle = ticket.title || ticket.id;
+    if (!JIRA_BROWSE_BASE_URL) {
+        return `<span class="task-link task-link-disabled" title="${ticket.id}">${safeTitle}</span>`;
+    }
+
+    return `<a href="${JIRA_BROWSE_BASE_URL}/${ticket.id}" target="_blank" rel="noreferrer" class="task-link" title="${ticket.id}">${safeTitle}</a>`;
+}
+
 function renderEmptyState() {
     const sprintGoal = document.getElementById('sprint-goal-text');
     const sprintPeriod = document.getElementById('sprint-period-text');
@@ -94,6 +115,25 @@ function renderEmptyState() {
             trendEl.style.backgroundColor = '#94a3b8';
         }
     });
+}
+
+function initContextUi() {
+    const demoBadge = document.getElementById('demoBadge');
+    const btnSync = document.getElementById('btnSync');
+
+    if (APP_CONTEXT.mode === 'demo' && demoBadge) {
+        demoBadge.innerText = 'Modo Demo';
+        demoBadge.style.display = 'inline-flex';
+        demoBadge.title = APP_CONTEXT.banner || 'Configure o .env para usar o board real do seu time.';
+    }
+
+    if (btnSync && APP_CONTEXT.syncEnabled === false) {
+        btnSync.disabled = true;
+        btnSync.innerText = 'Demo';
+        btnSync.title = APP_CONTEXT.banner || 'Configure o .env para habilitar o Sync Jira.';
+        btnSync.style.opacity = '0.7';
+        btnSync.style.cursor = 'not-allowed';
+    }
 }
 
 function getUniqueDevs() {
@@ -299,16 +339,28 @@ function loadData() {
                     const borderStyle = isNewDev ? 'border-top: 1px dashed var(--border); margin-top: 8px; padding-top: 8px;' : '';
                     const commentHtml = t.comment ? `<span class="task-comment" id="task-comment-${t.id}">${t.comment}</span>` : `<span class="task-comment" id="task-comment-${t.id}"></span>`;
                     const commentClass = t.comment ? 'has-comment' : '';
-                    return `<li id="task-li-${t.id}" style="${borderStyle}" draggable="true" ondragstart="handleDragStart(event, '${t.id}')">
+                    const isReadOnly = isReadOnlyMode();
+                    const dragAttr = isReadOnly ? 'false' : 'true';
+                    const dragStart = isReadOnly ? '' : `ondragstart="handleDragStart(event, '${t.id}')"`;
+                    const commentButton = isReadOnly
+                        ? ''
+                        : `<button class="btn-comment ${commentClass}" onclick="editComment('${t.id}')" title="Adicionar Comentário">💬</button>`;
+                    return `<li id="task-li-${t.id}" style="${borderStyle}" draggable="${dragAttr}" ${dragStart}>
                         <span class="status-dot ${getTaskStatusClass(t, sprint)}"></span> 
                         <span class="task-dev">${t.dev}</span> 
-                        <a href="https://c4br.atlassian.net/browse/${t.id}" target="_blank" class="task-link" title="${t.id}">${t.title}</a> 
+                        ${renderTicketLink(t)} 
                         <span class="task-pts">${t.pts}.0 pts</span>
-                        <button class="btn-comment ${commentClass}" onclick="editComment('${t.id}')" title="Adicionar Comentário">💬</button>
+                        ${commentButton}
                         ${commentHtml}
                     </li>`;
                 }).join('');
             };
+            const dropHandlers = isReadOnlyMode()
+                ? ''
+                : `ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'done')"`;
+            const pendingDropHandlers = isReadOnlyMode()
+                ? ''
+                : `ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'escaped')"`;
             return `
             <details class="epic-item" ${isOpen}>
                 <summary>
@@ -317,11 +369,11 @@ function loadData() {
                     <span style="margin-left: 15px;">▼</span>
                 </summary>
                 <div class="epic-content">
-                    <div class="epic-column" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'done')">
+                    <div class="epic-column" ${dropHandlers}>
                         <div class="epic-col-title">Entregues</div>
                         <ul class="epic-tasks">${renderTasks(e.tasks.e, 'done')}</ul>
                     </div>
-                    <div class="epic-column" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'escaped')">
+                    <div class="epic-column" ${pendingDropHandlers}>
                         <div class="epic-col-title ${isSprintWip(sprint) ? 'epic-col-title-wip' : ''}">${getPendingColumnLabel(sprint)}</div>
                         <ul class="epic-tasks">${renderTasks(e.tasks.s, 'escaped')}</ul>
                     </div>
@@ -458,6 +510,7 @@ function updateStatsOnly() {
 let currentEditingTicket = null;
 
 function editComment(ticketId) {
+    if (isReadOnlyMode()) return;
     const selectedSprintId = document.getElementById('filter-sprint').value;
     const sprint = getCurrentSprint(selectedSprintId);
     if (!sprint) return;
@@ -699,6 +752,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnSync = document.getElementById('btnSync');
     if (btnSync) {
         btnSync.addEventListener('click', async () => {
+            if (APP_CONTEXT.syncEnabled === false) {
+                alert(APP_CONTEXT.banner || 'Configure o .env para habilitar o Sync Jira.');
+                return;
+            }
             btnSync.innerText = 'Sincronizando...'; btnSync.disabled = true;
             try {
                 const response = await fetch('/api/sync', { method: 'POST' });
@@ -710,6 +767,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    safeRun('Contexto', initContextUi);
     safeRun('Filtros', initFilters);
     safeRun('Dados', loadData);
     safeRun('Gráficos', renderCharts);

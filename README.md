@@ -7,6 +7,12 @@ Ele pega o que aconteceu no Jira e organiza a conversa que normalmente fica espa
 
 Se a sua rotina envolve compromisso de sprint, entrega, escapados, fura-fila e defesa do time com dados, este projeto foi feito para você.
 
+Visão rápida do produto em ação:
+
+![Dashboard do Momentum - visão geral](docs/readme-assets/momentum-01.png)
+![Dashboard do Momentum - épicos e execução](docs/readme-assets/momentum-02.png)
+![Dashboard do Momentum - histórico e narrativa](docs/readme-assets/momentum-03.png)
+
 ## O que o Momentum entrega
 
 - visão rápida da sprint atual e do histórico recente

@@ -27,3 +27,5 @@ codex-scripts/update_jira_comments.js
 src/sprint-data-*/sprints-jira.js
 src/sprint-data-*/sprints-custom.js
 src/sprint-data-*/reports/**
+!src/sprint-data-demo/
+!src/sprint-data-demo/sprints-jira.js

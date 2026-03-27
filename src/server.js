@@ -7,20 +7,28 @@ const { syncSprint, fetchJira } = require('./sync');
 const {
     getBoardAlias,
     getBoardId,
+    getDemoBoardAlias,
+    getDemoBoardId,
     getCustomSprintsFile,
     getJiraSprintsFile,
+    getJiraBrowseBaseUrl,
     getReportsDir,
-    getSprintDataDir
+    getSprintDataDir,
+    isDemoMode
 } = require('./board-config');
 
 const app = express();
 const PORT = 3000;
-const BOARD_ID = getBoardId();
-const BOARD_ALIAS = getBoardAlias();
-const SPRINT_DATA_DIR = getSprintDataDir(__dirname);
-const JIRA_SPRINTS_FILE = getJiraSprintsFile(__dirname);
-const CUSTOM_SPRINTS_FILE = getCustomSprintsFile(__dirname);
-const REPORTS_DIR = getReportsDir(__dirname);
+const DEMO_MODE = isDemoMode(__dirname);
+const BOARD_ID = DEMO_MODE ? getDemoBoardId() : getBoardId();
+const BOARD_ALIAS = DEMO_MODE ? getDemoBoardAlias() : getBoardAlias();
+const SPRINT_DATA_DIR = DEMO_MODE ? path.join(__dirname, 'sprint-data-demo') : getSprintDataDir(__dirname);
+const JIRA_SPRINTS_FILE = path.join(SPRINT_DATA_DIR, 'sprints-jira.js');
+const CUSTOM_SPRINTS_FILE = DEMO_MODE
+    ? path.join(SPRINT_DATA_DIR, 'sprints-custom.js')
+    : getCustomSprintsFile(__dirname);
+const REPORTS_DIR = DEMO_MODE ? path.join(SPRINT_DATA_DIR, 'reports') : getReportsDir(__dirname);
+const JIRA_BROWSE_BASE_URL = DEMO_MODE ? '' : getJiraBrowseBaseUrl();
 
 app.use(express.json());
 app.use(express.static(__dirname));
@@ -53,16 +61,32 @@ app.get('/api/sprint-data.js', (req, res) => {
         const payload = fs.existsSync(JIRA_SPRINTS_FILE)
             ? fs.readFileSync(JIRA_SPRINTS_FILE, 'utf8')
             : 'const MOMENTUM_SPRINTS_DATA = [];';
-        res.type('application/javascript').send(payload);
+        const contextScript = `\nconst MOMENTUM_CONTEXT = ${JSON.stringify({
+            mode: DEMO_MODE ? 'demo' : 'live',
+            boardId: String(BOARD_ID),
+            boardAlias: BOARD_ALIAS,
+            dataSource: DEMO_MODE ? 'demo' : 'jira',
+            jiraBrowseBaseUrl: JIRA_BROWSE_BASE_URL,
+            syncEnabled: !DEMO_MODE,
+            manualEditingEnabled: true,
+            banner: DEMO_MODE ? 'Modo Demo: configure o .env para conectar o Momentum ao board real do seu time.' : ''
+        }, null, 4)};`;
+        res.type('application/javascript').send(`${payload}\n${contextScript}`);
     } catch (error) {
         console.error('❌ Erro ao carregar dados da sprint:', error.message);
-        res.status(500).type('application/javascript').send('const MOMENTUM_SPRINTS_DATA = [];');
+        res.status(500).type('application/javascript').send('const MOMENTUM_SPRINTS_DATA = [];\nconst MOMENTUM_CONTEXT = { mode: "error", syncEnabled: false, manualEditingEnabled: false };');
     }
 });
 
 // Endpoint de Sync
 app.post('/api/sync', async (req, res) => {
     console.log('🚀 Sync solicitado pelo Dashboard...');
+    if (DEMO_MODE) {
+        return res.status(400).json({
+            success: false,
+            error: 'Modo Demo ativo. Configure o .env para habilitar o Sync Jira.'
+        });
+    }
     try {
         const sprintData = await fetchJira(`/rest/agile/1.0/board/${BOARD_ID}/sprint?state=active`);
         if (!sprintData.values || sprintData.values.length === 0) throw new Error('Nenhuma sprint ativa.');
@@ -104,6 +128,9 @@ app.post('/api/ticket/update', async (req, res) => {
 
 // Endpoint de Comentário (Persistência Dupla)
 app.post('/api/ticket/comment', async (req, res) => {
+    if (DEMO_MODE) {
+        return res.status(400).json({ success: false, error: 'Modo Demo nao permite comentarios persistidos.' });
+    }
     const { sprintId, ticketId, comment } = req.body;
     console.log(`💬 Comentário: Ticket ${ticketId} -> "${comment}"`);
     
@@ -169,5 +196,6 @@ app.listen(PORT, async () => {
     console.log(`\n✅ Momentum Dashboard rodando em: http://localhost:${PORT}`);
     console.log(`🗂️ Board ativo: ${BOARD_ID} (${BOARD_ALIAS})`);
     console.log(`📁 Diretório de dados: ${path.relative(__dirname, SPRINT_DATA_DIR)}`);
+    if (DEMO_MODE) console.log('🧪 Modo Demo ativo: carregando dataset mockado.');
     console.log(`🚀 Servidor pronto e aguardando...`);
 });

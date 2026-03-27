@@ -35,6 +35,18 @@ header { display: flex; justify-content: space-between; align-items: center; mar
 .logo-container img { height: 90px; }
 .actions { display: flex; gap: 10px; align-items: center; }
 
+.demo-badge {
+    padding: 10px 14px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #f59e0b, #f97316);
+    color: white;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    box-shadow: 0 8px 24px rgba(249, 115, 22, 0.25);
+}
+
 button {
     height: 42px;
     padding: 0 20px;
@@ -180,6 +192,8 @@ body.dark-mode .task-dev { background: rgba(255,255,255,0.1); }
 
 .task-link { color: var(--primary); text-decoration: none; flex: 1; min-width: 200px; line-height: 1.4; }
 .task-link:hover { text-decoration: underline; }
+.task-link-disabled { color: var(--text-main); cursor: default; opacity: 0.9; }
+.task-link-disabled:hover { text-decoration: none; }
 
 .task-comment { font-size: 0.75rem; color: #84cc16; font-style: italic; margin-left: 28px; width: 100%; display: block; margin-top: 4px; }
 .btn-comment { 
