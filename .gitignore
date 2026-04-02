@@ -21,7 +21,6 @@ SPRINTS.xlsx
 **/sprints-custom.js
 **/sprints-removed.js
 **/sprints-*.js
-codex-scripts/update_jira_comments.js
 
 # Local sprint data and client artifacts
 src/sprint-data-*/sprints-jira.js
