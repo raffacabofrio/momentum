@@ -91,6 +91,51 @@ function getSprintChartLabel(sprint) {
     return isSprintWip(sprint) ? `${sprint.id} (WIP)` : sprint.id;
 }
 
+function renderPerformanceCard(sprint, perf, trend) {
+    const card = document.getElementById('kpi-performance-card');
+    if (!card) return;
+
+    if (!isSprintWip(sprint)) {
+        card.classList.remove('card-performance-wip');
+        card.innerHTML = `
+            <div class="card-title">Performance</div>
+            <div class="card-value" id="kpi-performance-val">0%</div>
+            <div class="trend" id="kpi-performance-trend">+ 0%</div>
+        `;
+        return;
+    }
+
+    const elapsedPercent = Math.round(getSprintElapsedRatio(sprint) * 100);
+    const safePerf = Math.max(0, Math.min(perf, 100));
+    const safeElapsed = Math.max(0, Math.min(elapsedPercent, 100));
+
+    card.classList.add('card-performance-wip');
+    card.style.background = `linear-gradient(to right, #1e40af ${safePerf}%, #1d4ed8 ${safePerf}%)`;
+    card.style.backgroundSize = '';
+    card.style.backgroundPosition = '';
+    card.style.backgroundRepeat = '';
+    card.innerHTML = `
+        <div class="card-title">Performance</div>
+        <div class="card-value">${safePerf}%</div>
+        <div class="performance-wip-footer" aria-label="Tempo consumido da sprint">
+            <div class="performance-wip-time-row">
+                <div class="performance-wip-time-track">
+                    <div class="performance-wip-time-fill" style="width: ${safeElapsed}%;"></div>
+                </div>
+                <span class="performance-wip-label">tempo</span>
+            </div>
+            <span class="performance-wip-value">${safeElapsed}%</span>
+        </div>
+    `;
+}
+
+function setTrendVisibility(id, visible) {
+    const el = document.getElementById(`kpi-${id}-trend`);
+    if (el) {
+        el.style.display = visible ? 'inline-flex' : 'none';
+    }
+}
+
 function getTotalPointsBadgeClass(devPerformance, sprint) {
     if (!isSprintWip(sprint)) {
         if (devPerformance.totalPts > 13) return 'points-dark-green';
@@ -266,6 +311,11 @@ function loadData() {
         };
     }
 
+    const sprintIsWip = isSprintWip(sprint);
+
+    renderPerformanceCard(sprint, curr.perf, trends.perf);
+    ['performance', 'planejados', 'furafilas', 'removidos'].forEach(id => setTrendVisibility(id, !sprintIsWip));
+
     const updateKPI = (id, val, trend, rev = false) => {
         const elVal = document.getElementById(`kpi-${id}-val`);
         if(elVal) elVal.innerText = id === 'performance' ? `${val}%` : val;
@@ -278,10 +328,12 @@ function loadData() {
         }
     };
 
+    if (!sprintIsWip) {
+        updateKPI('performance', curr.perf, trends.perf);
+    }
     updateKPI('planejados', 0, trends.pDone);
     updateKPI('removidos', curr.removed, trends.removed, true);
     updateKPI('furafilas', 0, trends.fDone, true);
-    updateKPI('performance', curr.perf, trends.perf);
 
     const setCardProgress = (id, done, total, fillDark, fillLight, isPercent = false) => {
         const pct = isPercent ? done : (total > 0 ? Math.round((done / total) * 100) : 0);
@@ -293,7 +345,9 @@ function loadData() {
         if(valEl) valEl.innerText = isPercent ? `${done}%` : `${done} / ${total}`;
     };
 
-    setCardProgress('performance', curr.perf, 100, '#1e40af', '#1d4ed8', true);
+    if (!sprintIsWip) {
+        setCardProgress('performance', curr.perf, 100, '#1e40af', '#1d4ed8', true);
+    }
     setCardProgress('planejados', curr.pDone, curr.pTotal, '#166534', '#15803d');
     setCardProgress('furafilas', curr.fDone, curr.fTotal, '#ea580c', '#f97316');
 

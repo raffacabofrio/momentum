@@ -104,6 +104,56 @@ select { padding: 8px; border-radius: 4px; border: 1px solid var(--border); back
 .card-title { font-size: 0.9rem; color: rgba(255, 255, 255, 0.8); margin-bottom: 10px; font-weight: 600; text-transform: uppercase; }
 .card-value { font-size: 2.5rem; font-weight: 800; margin-bottom: 5px; }
 
+.card-performance-wip {
+    display: flex;
+    flex-direction: column;
+}
+
+.card-performance-wip .card-value { margin-bottom: auto; }
+
+.performance-wip-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.performance-wip-time-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    flex: 1;
+}
+
+.performance-wip-time-track {
+    height: 8px;
+    flex: 1;
+    min-width: 0;
+    background: rgba(226, 232, 240, 0.14);
+    overflow: hidden;
+}
+
+.performance-wip-time-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #cbd5e1, #94a3b8);
+}
+
+.performance-wip-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: lowercase;
+    color: rgba(255, 255, 255, 0.85);
+    letter-spacing: 0.03em;
+}
+
+.performance-wip-value {
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.95);
+}
+
 .trend {
     font-size: 0.75rem;
     display: flex;
