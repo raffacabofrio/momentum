@@ -18,7 +18,7 @@ const {
 } = require('./board-config');
 
 const app = express();
-const PORT = 3000;
+const PORT = 3001;
 const DEMO_MODE = isDemoMode(__dirname);
 const BOARD_ID = DEMO_MODE ? getDemoBoardId() : getBoardId();
 const BOARD_ALIAS = DEMO_MODE ? getDemoBoardAlias() : getBoardAlias();

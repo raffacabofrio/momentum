@@ -67,8 +67,47 @@ function isSprintWip(sprint) {
     return endDate > today;
 }
 
+function getSprintElapsedRatio(sprint) {
+    if (!sprint?.period) return 1;
+    const [startDateRaw, endDateRaw] = sprint.period.split(' - ');
+    const startDate = parsePtBrDate(startDateRaw);
+    const endDate = parsePtBrDate(endDateRaw);
+    if (!startDate || !endDate || endDate < startDate) return 1;
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const dayMs = 24 * 60 * 60 * 1000;
+    const totalDays = Math.floor((endDate - startDate) / dayMs) + 1;
+    const elapsedDays = Math.min(Math.max(Math.floor((today - startDate) / dayMs) + 1, 0), totalDays);
+
+    return totalDays > 0 ? elapsedDays / totalDays : 1;
+}
+
 function getPendingColumnLabel(sprint) {
     return isSprintWip(sprint) ? 'Em andamento' : 'Escaparam / Removidos';
+}
+
+function getSprintChartLabel(sprint) {
+    return isSprintWip(sprint) ? `${sprint.id} (WIP)` : sprint.id;
+}
+
+function getTotalPointsBadgeClass(devPerformance, sprint) {
+    if (!isSprintWip(sprint)) {
+        if (devPerformance.totalPts > 13) return 'points-dark-green';
+        if (devPerformance.totalPts >= 10) return 'points-light-green';
+        if (devPerformance.totalPts >= 6) return 'points-orange';
+        return 'points-red';
+    }
+
+    const elapsedRatio = getSprintElapsedRatio(sprint);
+    const expectedPts = devPerformance.committedPts * elapsedRatio;
+    if (expectedPts <= 0) return devPerformance.totalPts > 0 ? 'points-light-green' : 'points-red';
+
+    const paceRatio = devPerformance.totalPts / expectedPts;
+    if (paceRatio >= 1.15) return 'points-dark-green';
+    if (paceRatio >= 0.9) return 'points-light-green';
+    if (paceRatio >= 0.6) return 'points-orange';
+    return 'points-red';
 }
 
 function getTaskStatusClass(ticket, sprint) {
@@ -266,11 +305,14 @@ function loadData() {
         const fD = dTicks.filter(t => t.type === 'fura-fila' && t.status === 'done').length;
         const fT = dTicks.filter(t => t.type === 'fura-fila').length;
         const totalPts = dTicks.filter(t => t.status === 'done').reduce((a, t) => a + (Number(t.pts) || 0), 0);
-        const historicalPts = MOMENTUM_SPRINTS_DATA.map(s => 
+        const committedPts = dTicks.filter(t => t.status !== 'removed').reduce((a, t) => a + (Number(t.pts) || 0), 0);
+        const historicalPts = MOMENTUM_SPRINTS_DATA.filter(s => !isSprintWip(s)).map(s => 
             s.tickets.filter(t => t.dev === devId && t.status === 'done').reduce((acc, t) => acc + (Number(t.pts) || 0), 0)
         );
-        const avgPts = Number((historicalPts.reduce((a, b) => a + b, 0) / historicalPts.length).toFixed(1));
-        return { devId, pD, pT, fD, fT, totalPts, avgPts, count: dTicks.length };
+        const avgPts = historicalPts.length > 0
+            ? Number((historicalPts.reduce((a, b) => a + b, 0) / historicalPts.length).toFixed(1))
+            : 0;
+        return { devId, pD, pT, fD, fT, totalPts, committedPts, avgPts, count: dTicks.length };
     }).filter(d => d.count > 0 && (selectedDev === 'TODOS' || d.devId === selectedDev));
 
     devPerformance.sort((a, b) => {
@@ -290,7 +332,7 @@ function loadData() {
     const tableBody = document.getElementById('dev-table-body');
     if (tableBody) {
         tableBody.innerHTML = devPerformance.map(d => {
-            const bc = d.totalPts > 13 ? 'points-dark-green' : d.totalPts >= 10 ? 'points-light-green' : d.totalPts >= 6 ? 'points-orange' : 'points-red';
+            const bc = getTotalPointsBadgeClass(d, sprint);
             const trophy = (d.totalPts === maxPts && maxPts > 0) ? ' 🏆' : '';
             return `<tr>
                 <td>${d.devId}${trophy}</td>
@@ -575,7 +617,7 @@ function initFilters() {
         return;
     }
 
-    sprintFilter.innerHTML = MOMENTUM_SPRINTS_DATA.map(s => `<option value="${s.id}">${s.id}</option>`).reverse().join('');
+    sprintFilter.innerHTML = MOMENTUM_SPRINTS_DATA.map(s => `<option value="${s.id}">${getSprintChartLabel(s)}</option>`).reverse().join('');
     devFilter.innerHTML = `<option>TODOS</option>` + getUniqueDevs().map(d => `<option>${d}</option>`).join('');
     sprintFilter.addEventListener('change', () => { loadData(); renderCharts(); });
     devFilter.addEventListener('change', () => { loadData(); renderCharts(); });
@@ -598,7 +640,7 @@ function renderCharts() {
     const textColor = isDark ? '#94a3b8' : '#64748b';
     const selectedDev = document.getElementById('filter-dev')?.value || 'TODOS';
     
-    const sprintLabels = MOMENTUM_SPRINTS_DATA.map(s => s.id);
+    const sprintLabels = MOMENTUM_SPRINTS_DATA.map(getSprintChartLabel);
     
     // Filtrar dados para o gráfico de barras (Planejado vs Entregue)
     const delivered = MOMENTUM_SPRINTS_DATA.map(s => {
@@ -639,7 +681,15 @@ function renderCharts() {
             data: {
                 labels: sprintLabels,
                 datasets: [
-                    { label: 'Entregue', data: delivered, backgroundColor: '#166534', borderRadius: 4, order: 1, barPercentage: 0.5, categoryPercentage: 0.8 },
+                    {
+                        label: 'Entregue',
+                        data: delivered,
+                        backgroundColor: MOMENTUM_SPRINTS_DATA.map(sprint => isSprintWip(sprint) ? '#4ade80' : '#166534'),
+                        borderRadius: 4,
+                        order: 1,
+                        barPercentage: 0.5,
+                        categoryPercentage: 0.8
+                    },
                     { label: 'Comprometido', data: committed, backgroundColor: isDark ? 'rgba(51, 65, 85, 0.5)' : 'rgba(203, 213, 225, 0.5)', borderRadius: 4, order: 2, barPercentage: 0.5, categoryPercentage: 0.8 }
                 ]
             },
