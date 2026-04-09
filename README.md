@@ -163,3 +163,5 @@ Ele serve para ajudar o Tech Lead a:
 - identificar padrões de escape e instabilidade
 
 O objetivo é simples: deixar a conversa de sprint mais lúcida, mais justa e mais profissional.
+
+teste
