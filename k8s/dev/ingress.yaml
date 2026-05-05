@@ -8,9 +8,9 @@ metadata:
     tags.datadoghq.com/env: dev
     tags.datadoghq.com/service: momentum
 spec:
-  ingressClassName: nginx-external
+  ingressClassName: nginx-internal
   rules:
-    - host: momentum-qa.cloud.carrefour.com.br
+    - host: momentum.qa.br.wcorp.carrefour.com
       http:
         paths:
           - path: /
