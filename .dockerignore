@@ -1,0 +1,13 @@
+node_modules
+npm-debug.log
+.git
+.codex
+.env
+.env.*
+!.env.example
+AGENTS.md
+colinha.txt
+docs/readme-assets
+print*.png
+print*.jpg
+*.log

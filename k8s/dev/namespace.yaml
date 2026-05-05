@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: momentum
+  labels:
+    app.kubernetes.io/name: momentum
+    tags.datadoghq.com/env: dev

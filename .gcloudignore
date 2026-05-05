@@ -1,0 +1,15 @@
+.git
+.codex
+.env
+.env.*
+!.env.example
+AGENTS.md
+colinha.txt
+node_modules
+docs/readme-assets
+print*.png
+print*.jpg
+*.log
+src/sprint-data-*/sprints-jira.js
+src/sprint-data-*/sprints-custom.js
+src/sprint-data-*/reports/**

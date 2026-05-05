@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: momentum
+  namespace: momentum
+  labels:
+    app.kubernetes.io/name: momentum
+    tags.datadoghq.com/env: dev
+    tags.datadoghq.com/service: momentum
+spec:
+  ingressClassName: nginx-external
+  rules:
+    - host: momentum-qa.cloud.carrefour.com.br
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: momentum
+                port:
+                  number: 80

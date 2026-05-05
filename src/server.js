@@ -38,6 +38,13 @@ const PERSISTENCE_TYPE = getPersistenceType();
 app.use(express.json());
 app.use(express.static(__dirname));
 
+app.get('/healthz', (req, res) => {
+    res.json({
+        status: 'ok',
+        persistenceType: PERSISTENCE_TYPE
+    });
+});
+
 function resolveRequestContext(teamKey) {
     if (DEMO_MODE) {
         const sprintDataDir = path.join(__dirname, 'sprint-data-demo');
