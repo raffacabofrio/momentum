@@ -253,9 +253,13 @@ async function startServer() {
 
     app.listen(PORT, () => {
         console.log(`\n✅ Momentum Dashboard rodando em: http://localhost:${PORT}`);
-        console.log(`🗂️ Board ativo: ${BOARD_ID} (${BOARD_ALIAS})`);
-        console.log(`📁 Diretório de dados: ${path.relative(__dirname, SPRINT_DATA_DIR)}`);
         console.log(`💾 Persistência: ${PERSISTENCE_TYPE}`);
+        if (PERSISTENCE_TYPE === 'mongodb') {
+            console.log('🗄️ MongoDB: database momentum');
+        } else {
+            console.log(`🗂️ Board ativo: ${BOARD_ID} (${BOARD_ALIAS})`);
+            console.log(`📁 Diretório de dados: ${path.relative(__dirname, SPRINT_DATA_DIR)}`);
+        }
         if (DEMO_MODE) console.log('🧪 Modo Demo ativo: carregando dataset mockado.');
         console.log(`🚀 Servidor pronto e aguardando...`);
     });
