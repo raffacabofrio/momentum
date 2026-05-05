@@ -14,6 +14,8 @@ const {
     getJiraBrowseBaseUrl,
     getReportsDir,
     getSprintDataDir,
+    getTeamConfig,
+    getTeamOptions,
     isDemoMode
 } = require('./board-config');
 
@@ -50,26 +52,67 @@ function parseSprintDataFile(filePath) {
     return parseSprintDataScript(content);
 }
 
-function ensureCustomDataFile() {
-    if (!fs.existsSync(CUSTOM_SPRINTS_FILE)) {
-        fs.writeFileSync(CUSTOM_SPRINTS_FILE, 'module.exports = {};', 'utf8');
+function ensureCustomDataFile(filePath = CUSTOM_SPRINTS_FILE) {
+    if (!fs.existsSync(filePath)) {
+        fs.writeFileSync(filePath, 'module.exports = {};', 'utf8');
     }
+}
+
+function resolveRequestContext(teamKey) {
+    if (DEMO_MODE) {
+        const sprintDataDir = path.join(__dirname, 'sprint-data-demo');
+        return {
+            mode: 'demo',
+            teamKey: 'demo',
+            teamLabel: 'Demo',
+            boardId: String(getDemoBoardId()),
+            boardAlias: getDemoBoardAlias(),
+            sprintDataDir,
+            jiraSprintsFile: path.join(sprintDataDir, 'sprints-jira.js'),
+            customSprintsFile: path.join(sprintDataDir, 'sprints-custom.js'),
+            reportsDir: path.join(sprintDataDir, 'reports'),
+            syncEnabled: false,
+            manualEditingEnabled: true,
+            banner: 'Modo Demo: configure o .env para conectar o Momentum ao board real do seu time.'
+        };
+    }
+
+    const team = getTeamConfig(teamKey);
+    const sprintDataDir = getSprintDataDir(__dirname, team.boardAlias);
+    return {
+        mode: 'live',
+        teamKey: team.key,
+        teamLabel: team.label,
+        boardId: team.boardId ? String(team.boardId) : '',
+        boardAlias: team.boardAlias,
+        sprintDataDir,
+        jiraSprintsFile: path.join(sprintDataDir, 'sprints-jira.js'),
+        customSprintsFile: path.join(sprintDataDir, 'sprints-custom.js'),
+        reportsDir: path.join(sprintDataDir, 'reports'),
+        syncEnabled: Boolean(team.boardId),
+        manualEditingEnabled: true,
+        banner: team.boardId ? '' : `Board do time ${team.label} ainda não configurado.`
+    };
 }
 
 app.get('/api/sprint-data.js', (req, res) => {
     try {
-        const payload = fs.existsSync(JIRA_SPRINTS_FILE)
-            ? fs.readFileSync(JIRA_SPRINTS_FILE, 'utf8')
+        const requestContext = resolveRequestContext(req.query.team);
+        const payload = fs.existsSync(requestContext.jiraSprintsFile)
+            ? fs.readFileSync(requestContext.jiraSprintsFile, 'utf8')
             : 'const MOMENTUM_SPRINTS_DATA = [];';
         const contextScript = `\nconst MOMENTUM_CONTEXT = ${JSON.stringify({
-            mode: DEMO_MODE ? 'demo' : 'live',
-            boardId: String(BOARD_ID),
-            boardAlias: BOARD_ALIAS,
+            mode: requestContext.mode,
+            teamKey: requestContext.teamKey,
+            teamLabel: requestContext.teamLabel,
+            teams: getTeamOptions().map(team => ({ key: team.key, label: team.label })),
+            boardId: requestContext.boardId,
+            boardAlias: requestContext.boardAlias,
             dataSource: DEMO_MODE ? 'demo' : 'jira',
             jiraBrowseBaseUrl: JIRA_BROWSE_BASE_URL,
-            syncEnabled: !DEMO_MODE,
-            manualEditingEnabled: true,
-            banner: DEMO_MODE ? 'Modo Demo: configure o .env para conectar o Momentum ao board real do seu time.' : ''
+            syncEnabled: requestContext.syncEnabled,
+            manualEditingEnabled: requestContext.manualEditingEnabled,
+            banner: requestContext.banner
         }, null, 4)};`;
         res.type('application/javascript').send(`${payload}\n${contextScript}`);
     } catch (error) {
@@ -80,19 +123,29 @@ app.get('/api/sprint-data.js', (req, res) => {
 
 // Endpoint de Sync
 app.post('/api/sync', async (req, res) => {
-    console.log('🚀 Sync solicitado pelo Dashboard...');
+    const requestContext = resolveRequestContext(req.query.team);
+    console.log(`🚀 Sync solicitado pelo Dashboard (${requestContext.teamLabel})...`);
     if (DEMO_MODE) {
         return res.status(400).json({
             success: false,
             error: 'Modo Demo ativo. Configure o .env para habilitar o Sync Jira.'
         });
     }
+    if (!requestContext.syncEnabled) {
+        return res.status(400).json({
+            success: false,
+            error: requestContext.banner || 'Sync Jira não configurado para este time.'
+        });
+    }
     try {
-        const sprintData = await fetchJira(`/rest/agile/1.0/board/${BOARD_ID}/sprint?state=active`);
+        const sprintData = await fetchJira(`/rest/agile/1.0/board/${requestContext.boardId}/sprint?state=active`);
         if (!sprintData.values || sprintData.values.length === 0) throw new Error('Nenhuma sprint ativa.');
         const activeSprint = sprintData.values[0];
 
-        const result = await syncSprint(activeSprint);
+        const result = await syncSprint(activeSprint, {
+            customSprintsFile: requestContext.customSprintsFile,
+            jiraSprintsFile: requestContext.jiraSprintsFile
+        });
         res.json({ success: true, sprint: result.id });
     } catch (error) {
         console.error('❌ Erro:', error.message);
@@ -101,11 +154,12 @@ app.post('/api/sync', async (req, res) => {
 });
 // Endpoint de Update de Ticket (Persistência Manual)
 app.post('/api/ticket/update', async (req, res) => {
-    const { sprintId, ticketId, newStatus } = req.body;
+    const { sprintId, ticketId, newStatus, teamKey } = req.body;
+    const requestContext = resolveRequestContext(teamKey);
     console.log(`📝 Update manual: Ticket ${ticketId} na Sprint ${sprintId} para ${newStatus}`);
     
     try {
-        const data = parseSprintDataFile(JIRA_SPRINTS_FILE);
+        const data = parseSprintDataFile(requestContext.jiraSprintsFile);
         
         const sprint = data.find(s => s.id === sprintId);
         if (!sprint) return res.status(404).json({ success: false, error: 'Sprint não encontrada' });
@@ -114,10 +168,10 @@ app.post('/api/ticket/update', async (req, res) => {
         if (!ticket) return res.status(404).json({ success: false, error: 'Ticket não encontrado' });
         
         ticket.status = newStatus;
-        
+
         // Salvar de volta formatado
         const newContent = `const MOMENTUM_SPRINTS_DATA = ${JSON.stringify(data, null, 4)};`;
-        fs.writeFileSync(JIRA_SPRINTS_FILE, newContent, 'utf8');
+        fs.writeFileSync(requestContext.jiraSprintsFile, newContent, 'utf8');
         
         res.json({ success: true });
     } catch (error) {
@@ -131,23 +185,24 @@ app.post('/api/ticket/comment', async (req, res) => {
     if (DEMO_MODE) {
         return res.status(400).json({ success: false, error: 'Modo Demo nao permite comentarios persistidos.' });
     }
-    const { sprintId, ticketId, comment } = req.body;
+    const { sprintId, ticketId, comment, teamKey } = req.body;
+    const requestContext = resolveRequestContext(teamKey);
     console.log(`💬 Comentário: Ticket ${ticketId} -> "${comment}"`);
     
     try {
         // 1. Atualizar sprints-jira.js (Lookup imediato)
-        const jiraData = parseSprintDataFile(JIRA_SPRINTS_FILE);
+        const jiraData = parseSprintDataFile(requestContext.jiraSprintsFile);
         const jiraSprint = jiraData.find(s => s.id === sprintId);
         if (jiraSprint) {
             const ticket = jiraSprint.tickets.find(t => t.id === ticketId);
             if (ticket) ticket.comment = comment;
-            fs.writeFileSync(JIRA_SPRINTS_FILE, `const MOMENTUM_SPRINTS_DATA = ${JSON.stringify(jiraData, null, 4)};`, 'utf8');
+            fs.writeFileSync(requestContext.jiraSprintsFile, `const MOMENTUM_SPRINTS_DATA = ${JSON.stringify(jiraData, null, 4)};`, 'utf8');
         }
 
         // 2. Atualizar sprints-custom.js (Bunker contra Sync)
-        ensureCustomDataFile();
-        delete require.cache[require.resolve(CUSTOM_SPRINTS_FILE)];
-        let customData = require(CUSTOM_SPRINTS_FILE);
+        ensureCustomDataFile(requestContext.customSprintsFile);
+        delete require.cache[require.resolve(requestContext.customSprintsFile)];
+        let customData = require(requestContext.customSprintsFile);
         if (!customData[sprintId]) customData[sprintId] = [];
         
         let customTicket = customData[sprintId].find(t => t.id === ticketId);
@@ -161,7 +216,7 @@ app.post('/api/ticket/comment', async (req, res) => {
             }
         }
         
-        fs.writeFileSync(CUSTOM_SPRINTS_FILE, `module.exports = ${JSON.stringify(customData, null, 4)};`, 'utf8');
+        fs.writeFileSync(requestContext.customSprintsFile, `module.exports = ${JSON.stringify(customData, null, 4)};`, 'utf8');
         
         res.json({ success: true });
     } catch (error) {
@@ -173,7 +228,8 @@ app.post('/api/ticket/comment', async (req, res) => {
 // Endpoint: Check de Relatório (Habilita/Desabilita Botão)
 app.get('/api/reports/check/:sprintId', (req, res) => {
     const { sprintId } = req.params;
-    const reportPath = path.join(REPORTS_DIR, `RELATORIO-${sprintId}.pdf`);
+    const requestContext = resolveRequestContext(req.query.team);
+    const reportPath = path.join(requestContext.reportsDir, `RELATORIO-${sprintId}.pdf`);
     const exists = fs.existsSync(reportPath);
     console.log(`🔍 Check de Relatório: ${sprintId} -> ${exists ? 'Encontrado' : 'Ausente'}`);
     res.json({ exists });
@@ -182,7 +238,8 @@ app.get('/api/reports/check/:sprintId', (req, res) => {
 // Endpoint: Download/Visualização do Relatório
 app.get('/api/reports/:sprintId', (req, res) => {
     const { sprintId } = req.params;
-    const reportPath = path.join(REPORTS_DIR, `RELATORIO-${sprintId}.pdf`);
+    const requestContext = resolveRequestContext(req.query.team);
+    const reportPath = path.join(requestContext.reportsDir, `RELATORIO-${sprintId}.pdf`);
     
     if (fs.existsSync(reportPath)) {
         res.setHeader('Content-Type', 'application/pdf');

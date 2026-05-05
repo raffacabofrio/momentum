@@ -38,8 +38,10 @@ async function fetchJira(apiUrl) {
     });
 }
 
-async function syncSprint(sprintIdOrObject) {
+async function syncSprint(sprintIdOrObject, options = {}) {
     try {
+        const customSprintsFile = options.customSprintsFile || CUSTOM_SPRINTS_FILE;
+        const jiraSprintsFile = options.jiraSprintsFile || JIRA_SPRINTS_FILE;
         let sprintMetadata = sprintIdOrObject;
         
         // If only ID is passed, fetch basic sprint info first
@@ -139,10 +141,10 @@ async function syncSprint(sprintIdOrObject) {
         };
 
         // 5. Merge Custom Data (Manual Removed Tickets + Comments)
-        if (fs.existsSync(CUSTOM_SPRINTS_FILE)) {
+        if (fs.existsSync(customSprintsFile)) {
             try {
-                delete require.cache[require.resolve(CUSTOM_SPRINTS_FILE)]; // Force read latest
-                const customData = require(CUSTOM_SPRINTS_FILE);
+                delete require.cache[require.resolve(customSprintsFile)]; // Force read latest
+                const customData = require(customSprintsFile);
                 const customForSprint = customData[newSprint.id] || [];
                 
                 // Aplicar overrides manuais nos tickets que vieram do Jira
@@ -167,8 +169,8 @@ async function syncSprint(sprintIdOrObject) {
 
         // 6. Update sprints-jira.js
         let currentData = [];
-        if (fs.existsSync(JIRA_SPRINTS_FILE)) {
-            const content = fs.readFileSync(JIRA_SPRINTS_FILE, 'utf8');
+        if (fs.existsSync(jiraSprintsFile)) {
+            const content = fs.readFileSync(jiraSprintsFile, 'utf8');
             try { currentData = parseSprintDataScript(content); } catch(e) { currentData = []; }
         }
 
@@ -176,7 +178,7 @@ async function syncSprint(sprintIdOrObject) {
         currentData.push(newSprint);
         currentData.sort((a, b) => a.id.localeCompare(b.id));
 
-        fs.writeFileSync(JIRA_SPRINTS_FILE, `const MOMENTUM_SPRINTS_DATA = ${JSON.stringify(currentData, null, 4)};`);
+        fs.writeFileSync(jiraSprintsFile, `const MOMENTUM_SPRINTS_DATA = ${JSON.stringify(currentData, null, 4)};`, 'utf8');
         console.log(`✅ Sprint ${newSprint.id} sincronizada!`);
         return newSprint;
 

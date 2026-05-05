@@ -9,6 +9,7 @@ const JIRA_BROWSE_BASE_URL = typeof APP_CONTEXT.jiraBrowseBaseUrl === 'string'
     ? APP_CONTEXT.jiraBrowseBaseUrl.replace(/\/+$/, '')
     : '';
 const MANUAL_EDITING_ENABLED = APP_CONTEXT.manualEditingEnabled !== false;
+const CURRENT_TEAM_KEY = APP_CONTEXT.teamKey || 'atc';
 
 const DEV_COLORS = {
     'VAL': '#166534',
@@ -183,7 +184,7 @@ function renderEmptyState() {
     const tableBody = document.getElementById('dev-table-body');
 
     if (sprintGoal) sprintGoal.innerText = 'Nenhuma sprint carregada ainda.';
-    if (sprintPeriod) sprintPeriod.innerText = 'Faça um Sync Jira para buscar os dados do board ativo.';
+    if (sprintPeriod) sprintPeriod.innerText = APP_CONTEXT.banner || 'Faça um Sync Jira para buscar os dados do board ativo.';
     if (sprintSwat) sprintSwat.innerHTML = '';
     if (sprintStar) sprintStar.innerHTML = '';
     if (epicContainer) epicContainer.innerHTML = '<div class="empty-state">Sem épicos para exibir.</div>';
@@ -213,11 +214,30 @@ function initContextUi() {
 
     if (btnSync && APP_CONTEXT.syncEnabled === false) {
         btnSync.disabled = true;
-        btnSync.innerText = 'Demo';
+        btnSync.innerText = APP_CONTEXT.mode === 'demo' ? 'Demo' : 'Sem Sync';
         btnSync.title = APP_CONTEXT.banner || 'Configure o .env para habilitar o Sync Jira.';
         btnSync.style.opacity = '0.7';
         btnSync.style.cursor = 'not-allowed';
     }
+}
+
+function initTeamFilter() {
+    const teamFilter = document.getElementById('filter-team');
+    if (!teamFilter) return;
+
+    const teams = Array.isArray(APP_CONTEXT.teams) && APP_CONTEXT.teams.length > 0
+        ? APP_CONTEXT.teams
+        : [{ key: CURRENT_TEAM_KEY, label: APP_CONTEXT.teamLabel || CURRENT_TEAM_KEY.toUpperCase() }];
+
+    teamFilter.innerHTML = teams
+        .map(team => `<option value="${team.key}" ${team.key === CURRENT_TEAM_KEY ? 'selected' : ''}>${team.label}</option>`)
+        .join('');
+
+    teamFilter.addEventListener('change', () => {
+        const params = new URLSearchParams(window.location.search);
+        params.set('team', teamFilter.value);
+        window.location.search = params.toString();
+    });
 }
 
 function getUniqueDevs() {
@@ -559,7 +579,7 @@ function handleDrop(e, newStatus) {
         fetch('/api/ticket/update', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sprintId: selectedSprintId, ticketId, newStatus })
+            body: JSON.stringify({ sprintId: selectedSprintId, ticketId, newStatus, teamKey: CURRENT_TEAM_KEY })
         });
     }
 }
@@ -650,7 +670,7 @@ function saveComment() {
     fetch('/api/ticket/comment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sprintId, ticketId: ticket.id, comment: newComment })
+        body: JSON.stringify({ sprintId, ticketId: ticket.id, comment: newComment, teamKey: CURRENT_TEAM_KEY })
     });
 
     closeCommentModal();
@@ -862,7 +882,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             btnSync.innerText = 'Sincronizando...'; btnSync.disabled = true;
             try {
-                const response = await fetch('/api/sync', { method: 'POST' });
+                const response = await fetch(`/api/sync?team=${encodeURIComponent(CURRENT_TEAM_KEY)}`, { method: 'POST' });
                 const result = await response.json();
                 if (result.success) { alert(`✅ Sprint ${result.sprint} sincronizada!`); window.location.reload(); }
                 else alert(`❌ Erro: ${result.error}`);
@@ -872,6 +892,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     safeRun('Contexto', initContextUi);
+    safeRun('Times', initTeamFilter);
     safeRun('Filtros', initFilters);
     safeRun('Dados', loadData);
     safeRun('Gráficos', renderCharts);

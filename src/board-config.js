@@ -6,6 +6,11 @@ const DEFAULT_BOARD_ALIAS = 'raffa';
 const DEFAULT_JIRA_HOST = 'c4br.atlassian.net';
 const DEMO_BOARD_ID = 'DEMO';
 const DEMO_BOARD_ALIAS = 'demo';
+const TEAM_OPTIONS = [
+    { key: 'atc', label: 'ATC', boardAlias: 'raffa', boardId: 1306 },
+    { key: 'payments', label: 'Payments', boardAlias: 'leandro', boardId: null },
+    { key: 'tdca', label: 'TDCA', boardAlias: 'danilo', boardId: 1209 }
+];
 
 function normalizeBoardAlias(alias) {
     return (alias || DEFAULT_BOARD_ALIAS).trim().toLowerCase();
@@ -21,8 +26,17 @@ function getBoardAlias() {
     return normalizeBoardAlias(process.env.BOARD_ALIAS);
 }
 
-function getSprintDataDir(baseDir = __dirname) {
-    return path.join(baseDir, `sprint-data-${getBoardAlias()}`);
+function getTeamOptions() {
+    return TEAM_OPTIONS;
+}
+
+function getTeamConfig(teamKey) {
+    const normalizedTeamKey = (teamKey || '').trim().toLowerCase();
+    return TEAM_OPTIONS.find(team => team.key === normalizedTeamKey) || TEAM_OPTIONS[0];
+}
+
+function getSprintDataDir(baseDir = __dirname, boardAlias = getBoardAlias()) {
+    return path.join(baseDir, `sprint-data-${normalizeBoardAlias(boardAlias)}`);
 }
 
 function getJiraSprintsFile(baseDir = __dirname) {
@@ -75,5 +89,7 @@ module.exports = {
     getJiraHost,
     getReportsDir,
     getSprintDataDir,
+    getTeamConfig,
+    getTeamOptions,
     isDemoMode
 };
