@@ -64,14 +64,18 @@ Exemplo:
 ```env
 BOARD=1111
 BOARD_ALIAS=raffa
-JIRA_EMAIL=seu-email
-JIRA_API_TOKEN=seu-token
+JIRA_USER=seu-email
+JIRA_API_KEY=seu-token
+PERSISTENCE_TYPE=filesystem
+MONGO_URI=mongodb+srv://usuario:senha@cluster/momentum
 ```
 
 Campos importantes:
 
 - `BOARD`: ID do board no Jira
 - `BOARD_ALIAS`: alias usado para resolver a pasta `src/sprint-data-<alias>`
+- `PERSISTENCE_TYPE`: `filesystem` ou `mongodb`
+- `MONGO_URI`: obrigatória quando `PERSISTENCE_TYPE=mongodb`
 
 ### 3. Suba o dashboard
 
@@ -79,7 +83,23 @@ Campos importantes:
 npm run dashboard
 ```
 
-O app abre em `http://localhost:3000`.
+O app abre em `http://localhost:3001`.
+
+## Persistência
+
+O Momentum suporta duas fontes de dados:
+
+- `filesystem`: usa os arquivos `src/sprint-data-*/sprints-jira.js` e `sprints-custom.js`
+- `mongodb`: usa o database `momentum`, com as coleções `teams`, `sprints-jira` e `sprints-custom`
+
+Para migrar os dados locais para MongoDB:
+
+```powershell
+npm run import:mongo:dry-run
+npm run import:mongo
+```
+
+O importador é idempotente e usa upsert. Ele não apaga os arquivos locais.
 
 ## Fluxo recomendado para onboardar um novo Tech Lead
 

@@ -40,6 +40,8 @@ async function fetchJira(apiUrl) {
 
 async function syncSprint(sprintIdOrObject, options = {}) {
     try {
+        const store = options.store || null;
+        const context = options.context || null;
         const customSprintsFile = options.customSprintsFile || CUSTOM_SPRINTS_FILE;
         const jiraSprintsFile = options.jiraSprintsFile || JIRA_SPRINTS_FILE;
         let sprintMetadata = sprintIdOrObject;
@@ -141,35 +143,39 @@ async function syncSprint(sprintIdOrObject, options = {}) {
         };
 
         // 5. Merge Custom Data (Manual Removed Tickets + Comments)
-        if (fs.existsSync(customSprintsFile)) {
-            try {
+        try {
+            let customData = {};
+            if (store && context) {
+                customData = await store.loadCustomSprints(context);
+            } else if (fs.existsSync(customSprintsFile)) {
                 delete require.cache[require.resolve(customSprintsFile)]; // Force read latest
-                const customData = require(customSprintsFile);
-                const customForSprint = customData[newSprint.id] || [];
-                
-                // Aplicar overrides manuais nos tickets que vieram do Jira
-                newSprint.tickets.forEach(t => {
-                    const ct = customForSprint.find(ct => ct.id === t.id);
-                    if (!ct) return;
-                    if (ct.status) t.status = ct.status;
-                    if (ct.comment) t.comment = ct.comment;
-                });
-
-                // Adicionar tickets que estão no custom mas NÃO vieram do Jira (ex: removidos manuais)
-                const existingIds = new Set(newSprint.tickets.map(t => t.id));
-                for (const ct of customForSprint) {
-                    if (!existingIds.has(ct.id)) {
-                        newSprint.tickets.push(ct);
-                    }
-                }
-            } catch (e) {
-                console.warn(`⚠️ Aviso: Falha ao mesclar sprints-custom.js - ${e.message}`);
+                customData = require(customSprintsFile);
             }
+
+            const customForSprint = customData[newSprint.id] || [];
+
+            // Aplicar overrides manuais nos tickets que vieram do Jira
+            newSprint.tickets.forEach(t => {
+                const ct = customForSprint.find(ct => ct.id === t.id);
+                if (!ct) return;
+                if (ct.status) t.status = ct.status;
+                if (ct.comment) t.comment = ct.comment;
+            });
+
+            // Adicionar tickets que estão no custom mas NÃO vieram do Jira (ex: removidos manuais)
+            const existingIds = new Set(newSprint.tickets.map(t => t.id));
+            for (const ct of customForSprint) {
+                if (!existingIds.has(ct.id)) {
+                    newSprint.tickets.push(ct);
+                }
+            }
+        } catch (e) {
+            console.warn(`⚠️ Aviso: Falha ao mesclar sprints-custom - ${e.message}`);
         }
 
-        // 6. Update sprints-jira.js
-        let currentData = [];
-        if (fs.existsSync(jiraSprintsFile)) {
+        // 6. Update sprint snapshot
+        let currentData = store && context ? await store.loadSprints(context) : [];
+        if (!store && fs.existsSync(jiraSprintsFile)) {
             const content = fs.readFileSync(jiraSprintsFile, 'utf8');
             try { currentData = parseSprintDataScript(content); } catch(e) { currentData = []; }
         }
@@ -178,7 +184,11 @@ async function syncSprint(sprintIdOrObject, options = {}) {
         currentData.push(newSprint);
         currentData.sort((a, b) => a.id.localeCompare(b.id));
 
-        fs.writeFileSync(jiraSprintsFile, `const MOMENTUM_SPRINTS_DATA = ${JSON.stringify(currentData, null, 4)};`, 'utf8');
+        if (store && context) {
+            await store.saveSprints(context, currentData);
+        } else {
+            fs.writeFileSync(jiraSprintsFile, `const MOMENTUM_SPRINTS_DATA = ${JSON.stringify(currentData, null, 4)};`, 'utf8');
+        }
         console.log(`✅ Sprint ${newSprint.id} sincronizada!`);
         return newSprint;
 

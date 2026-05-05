@@ -5,6 +5,8 @@
   "main": "src/sprints.js",
   "scripts": {
     "dashboard": "open-cli http://localhost:3001 & nodemon src/server.js",
+    "import:mongo:dry-run": "node src/scripts/import-filesystem-to-mongodb.js --dry-run",
+    "import:mongo": "node src/scripts/import-filesystem-to-mongodb.js --apply",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -22,6 +24,7 @@
   "dependencies": {
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
+    "mongodb": "^7.2.0",
     "open": "^11.0.0"
   },
   "devDependencies": {
