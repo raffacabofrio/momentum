@@ -223,7 +223,15 @@ function initContextUi() {
 
 function initTeamFilter() {
     const teamFilter = document.getElementById('filter-team');
+    const teamFilterGroup = document.getElementById('filter-team-group');
     if (!teamFilter) return;
+
+    if (APP_CONTEXT.persistenceType !== 'mongodb') {
+        if (teamFilterGroup) teamFilterGroup.style.display = 'none';
+        return;
+    }
+
+    if (teamFilterGroup) teamFilterGroup.style.display = '';
 
     const teams = Array.isArray(APP_CONTEXT.teams) && APP_CONTEXT.teams.length > 0
         ? APP_CONTEXT.teams

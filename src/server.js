@@ -57,6 +57,23 @@ function resolveRequestContext(teamKey) {
         };
     }
 
+    if (PERSISTENCE_TYPE !== 'mongodb') {
+        return {
+            mode: 'live',
+            teamKey: BOARD_ALIAS,
+            teamLabel: BOARD_ALIAS.toUpperCase(),
+            boardId: String(BOARD_ID),
+            boardAlias: BOARD_ALIAS,
+            sprintDataDir: SPRINT_DATA_DIR,
+            jiraSprintsFile: JIRA_SPRINTS_FILE,
+            customSprintsFile: CUSTOM_SPRINTS_FILE,
+            reportsDir: REPORTS_DIR,
+            syncEnabled: Boolean(BOARD_ID),
+            manualEditingEnabled: true,
+            banner: ''
+        };
+    }
+
     const team = getTeamConfig(teamKey);
     const sprintDataDir = getSprintDataDir(__dirname, team.boardAlias);
     return {
@@ -79,14 +96,15 @@ app.get('/api/sprint-data.js', async (req, res) => {
     try {
         const requestContext = resolveRequestContext(req.query.team);
         const sprints = await persistenceStore.loadSprints(requestContext);
-        const teams = await persistenceStore.listTeams(getTeamOptions());
+        const teams = PERSISTENCE_TYPE === 'mongodb'
+            ? await persistenceStore.listTeams(getTeamOptions())
+            : [];
         const payload = `const MOMENTUM_SPRINTS_DATA = ${JSON.stringify(sprints, null, 4)};`;
         const contextScript = `\nconst MOMENTUM_CONTEXT = ${JSON.stringify({
             mode: requestContext.mode,
             teamKey: requestContext.teamKey,
             teamLabel: requestContext.teamLabel,
             teams: teams.map(team => ({ key: team.key, label: team.label })),
-            boardId: requestContext.boardId,
             boardAlias: requestContext.boardAlias,
             dataSource: DEMO_MODE ? 'demo' : 'jira',
             persistenceType: PERSISTENCE_TYPE,
