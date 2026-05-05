@@ -21,7 +21,7 @@ Visão rápida do produto em ação:
 - evolução dos devs ao longo das sprints
 - itens escapados e removidos
 - comentários manuais para preservar contexto que o Jira sozinho não conta
-- suporte a múltiplos contextos de board por Tech Lead
+- suporte multi-time quando a persistência está em MongoDB
 
 ## Para quem isso é bom
 
@@ -64,6 +64,7 @@ Exemplo:
 ```env
 BOARD=1111
 BOARD_ALIAS=raffa
+JIRA_HOST=sua-instancia.atlassian.net
 JIRA_USER=seu-email
 JIRA_API_KEY=seu-token
 PERSISTENCE_TYPE=filesystem
@@ -73,7 +74,8 @@ MONGO_URI=mongodb+srv://usuario:senha@cluster/momentum
 Campos importantes:
 
 - `BOARD`: ID do board no Jira
-- `BOARD_ALIAS`: alias usado para resolver a pasta `src/sprint-data-<alias>`
+- `BOARD_ALIAS`: alias usado para resolver a pasta `src/sprint-data-<alias>` no modo `filesystem`
+- `JIRA_HOST`: host Atlassian usado pela API do Jira
 - `PERSISTENCE_TYPE`: `filesystem` ou `mongodb`
 - `MONGO_URI`: obrigatória quando `PERSISTENCE_TYPE=mongodb`
 
@@ -92,6 +94,10 @@ O Momentum suporta duas fontes de dados:
 - `filesystem`: usa os arquivos `src/sprint-data-*/sprints-jira.js` e `sprints-custom.js`
 - `mongodb`: usa o database `momentum`, com as coleções `teams`, `sprints-jira` e `sprints-custom`
 
+No modo `mongodb`, o dashboard habilita o select `Time` no topo. No modo `filesystem`, o time ativo vem de `BOARD` e `BOARD_ALIAS`, e o select fica oculto.
+
+Por segurança, o frontend não recebe `boardId` no `MOMENTUM_CONTEXT`; número de board é detalhe interno do backend.
+
 Para migrar os dados locais para MongoDB:
 
 ```powershell
@@ -100,6 +106,12 @@ npm run import:mongo
 ```
 
 O importador é idempotente e usa upsert. Ele não apaga os arquivos locais.
+
+Modelo das coleções:
+
+- `teams`: metadados do time, como `key`, `label`, `boardAlias`, `boardId` e `syncEnabled`
+- `sprints-jira`: snapshots de sprint vindos do Jira, por `teamKey + sprintId`
+- `sprints-custom`: overrides manuais, por `teamKey + sprintId`
 
 ## Fluxo recomendado para onboardar um novo Tech Lead
 
@@ -183,5 +195,3 @@ Ele serve para ajudar o Tech Lead a:
 - identificar padrões de escape e instabilidade
 
 O objetivo é simples: deixar a conversa de sprint mais lúcida, mais justa e mais profissional.
-
-teste
